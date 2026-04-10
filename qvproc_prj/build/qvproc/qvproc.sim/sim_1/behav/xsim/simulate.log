@@ -1,0 +1,66 @@
+Time resolution is 1 ps
+[BELL][cycle=0][INIT] instruction=                                               /u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem
+[BELL][cycle=0][INIT] data=                                                      /u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem
+[BELL][cycle=0][INIT] Bell program with measure halt-resume.
+              140000: Illegal instruction (hart 0) at PC 0x00000080: 0x00010413
+[BELL][cycle=18][INSTR] 06600313 (addi x6, x0, 0x66          )
+[BELL][cycle=19][INSTR] 05500393 (addi x7, x0, 0x55          )
+[BELL][cycle=20][INSTR] 00800293 (addi x5, x0, 8             )
+[BELL][cycle=21][INSTR] 0c72f057 (vsetvli x0, x5, e8, mf2    )
+[BELL][cycle=24][INSTR] 00000013 (nop                        )
+[BELL][cycle=25][INSTR] 00001537 (lui a0, 0x1                )
+[BELL][cycle=26][INSTR] 02050087 (vle8.v v1, (a0)            )
+[BELL][cycle=27][INSTR] 00850593 (addi a1, a0, 8             )
+[BELL][cycle=28][INSTR] 02058107 (vle8.v v2, (a1)            )
+[BELL][cycle=29][INSTR] c87081d7 (QV.SINGLE(H) vd3, v1, x7   )
+[BELL][cycle=30][INSTR] cc2081d7 (QV.PAIR(CNOT) vd3, v1, v2  )
+[BELL][cycle=31][INSTR] d07081d7 (QSG.MEASURE vd3, v1, x7    )
+[BELL][cycle=31][MEASURE] qvsg_meas=1 start d07081d7 (QSG.MEASURE vd3, v1, x7    )
+[BELL][cycle=48][QX] stream start: op=16(QV.SINGLE   ) id=3 vd=3 elem2=00000055 elem3=c8000180 ready=1
+[BELL] 48: idx=0 op=16(QV.SINGLE   ) id=3 vd=3 elem1=00000000 elem2=00000055 elem3=c8000180 ready=1
+[BELL] 49: idx=1 op=16(QV.SINGLE   ) id=3 vd=3 elem1=00000002 elem2=00000055 elem3=c8000180 ready=1
+[BELL] 50: idx=2 op=16(QV.SINGLE   ) id=3 vd=3 elem1=00000004 elem2=00000055 elem3=c8000180 ready=1
+[BELL] 51: idx=3 op=16(QV.SINGLE   ) id=3 vd=3 elem1=00000006 elem2=00000055 elem3=c8000180 ready=1
+[BELL] 52: idx=4 op=16(QV.SINGLE   ) id=3 vd=3 elem1=00000008 elem2=00000055 elem3=c8000180 ready=1
+[BELL] 53: idx=5 op=16(QV.SINGLE   ) id=3 vd=3 elem1=0000000a elem2=00000055 elem3=c8000180 ready=1
+[BELL] 54: idx=6 op=16(QV.SINGLE   ) id=3 vd=3 elem1=0000000c elem2=00000055 elem3=c8000180 ready=1
+[BELL] 55: idx=7 op=16(QV.SINGLE   ) id=3 vd=3 elem1=0000000e elem2=00000055 elem3=c8000180 ready=1
+[BELL][cycle=71][QX] stream start: op=17(QV.PAIR     ) id=4 vd=3 elem2=00000001 elem3=00000180 ready=1
+[BELL] 71: idx=8 op=17(QV.PAIR     ) id=4 vd=3 elem1=00000000 elem2=00000001 elem3=00000180 ready=1
+[BELL] 72: idx=9 op=17(QV.PAIR     ) id=4 vd=3 elem1=00000002 elem2=00000003 elem3=00000180 ready=1
+[BELL] 73: idx=10 op=17(QV.PAIR     ) id=4 vd=3 elem1=00000004 elem2=00000005 elem3=00000180 ready=1
+[BELL] 74: idx=11 op=17(QV.PAIR     ) id=4 vd=3 elem1=00000006 elem2=00000007 elem3=00000180 ready=1
+[BELL] 75: idx=12 op=17(QV.PAIR     ) id=4 vd=3 elem1=00000008 elem2=00000009 elem3=00000180 ready=1
+[BELL] 76: idx=13 op=17(QV.PAIR     ) id=4 vd=3 elem1=0000000a elem2=0000000b elem3=00000180 ready=1
+[BELL] 77: idx=14 op=17(QV.PAIR     ) id=4 vd=3 elem1=0000000c elem2=0000000d elem3=00000180 ready=1
+[BELL] 78: idx=15 op=17(QV.PAIR     ) id=4 vd=3 elem1=0000000e elem2=0000000f elem3=00000180 ready=1
+[BELL][cycle=94][QX] stream start: op=16(QV.SINGLE   ) id=5 vd=3 elem2=00000055 elem3=d0000180 ready=1
+[BELL] 94: idx=16 op=16(QV.SINGLE   ) id=5 vd=3 elem1=00000000 elem2=00000055 elem3=d0000180 ready=1
+[BELL] 95: idx=17 op=16(QV.SINGLE   ) id=5 vd=3 elem1=00000002 elem2=00000055 elem3=d0000180 ready=1
+[BELL] 96: idx=18 op=16(QV.SINGLE   ) id=5 vd=3 elem1=00000004 elem2=00000055 elem3=d0000180 ready=1
+[BELL] 97: idx=19 op=16(QV.SINGLE   ) id=5 vd=3 elem1=00000006 elem2=00000055 elem3=d0000180 ready=1
+[BELL] 98: idx=20 op=16(QV.SINGLE   ) id=5 vd=3 elem1=00000008 elem2=00000055 elem3=d0000180 ready=1
+[BELL] 99: idx=21 op=16(QV.SINGLE   ) id=5 vd=3 elem1=0000000a elem2=00000055 elem3=d0000180 ready=1
+[BELL] 100: idx=22 op=16(QV.SINGLE   ) id=5 vd=3 elem1=0000000c elem2=00000055 elem3=d0000180 ready=1
+[BELL] 101: idx=23 op=16(QV.SINGLE   ) id=5 vd=3 elem1=0000000e elem2=00000055 elem3=d0000180 ready=1
+[BELL][cycle=102][MEASURE] measure_issued_done=1
+[BELL][cycle=102][WAIT] Waiting for external ADC (50 cycles).
+[BELL][cycle=153][MEASURE] measure_done=1
+[BELL][cycle=155][MEASURE] qvsg_meas=0 resume
+[BELL][cycle=156][INSTR] f0610357 (QV.SINGLE(resume) vd6, v2,x6)
+[BELL][cycle=157][INSTR] 0000006f (jal x0, 0                  )
+[BELL][cycle=165][QX] stream start: op=16(QV.SINGLE   ) id=6 vd=6 elem2=00000066 elem3=f0000300 ready=1
+[BELL] 165: idx=24 op=16(QV.SINGLE   ) id=6 vd=6 elem1=00000001 elem2=00000066 elem3=f0000300 ready=1
+[BELL][cycle=165][RESUME] observed the first post-measure resume-marker event.
+[BELL] 166: idx=25 op=16(QV.SINGLE   ) id=6 vd=6 elem1=00000003 elem2=00000066 elem3=f0000300 ready=1
+[BELL] 167: idx=26 op=16(QV.SINGLE   ) id=6 vd=6 elem1=00000005 elem2=00000066 elem3=f0000300 ready=1
+[BELL] 168: idx=27 op=16(QV.SINGLE   ) id=6 vd=6 elem1=00000007 elem2=00000066 elem3=f0000300 ready=1
+[BELL] 169: idx=28 op=16(QV.SINGLE   ) id=6 vd=6 elem1=00000009 elem2=00000066 elem3=f0000300 ready=1
+[BELL] 170: idx=29 op=16(QV.SINGLE   ) id=6 vd=6 elem1=0000000b elem2=00000066 elem3=f0000300 ready=1
+[BELL] 171: idx=30 op=16(QV.SINGLE   ) id=6 vd=6 elem1=0000000d elem2=00000066 elem3=f0000300 ready=1
+[BELL] 172: idx=31 op=16(QV.SINGLE   ) id=6 vd=6 elem1=0000000f elem2=00000066 elem3=f0000300 ready=1
+[BELL][cycle=372][DONE] no new quantum events for 200 cycles after the last event.
+[BELL][cycle=372][SUMMARY] observed 32 quantum events.
+[BELL][cycle=372][SUMMARY] last quantum event arrived at cycle 172.
+[BELL][cycle=372][SUMMARY] use the transcript to inspect the Bell-state flow and the measure halt-resume handshake.
+$finish called at time : 3715 ns : File "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v" Line 355

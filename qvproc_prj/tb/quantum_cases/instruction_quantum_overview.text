@@ -1,0 +1,206 @@
+Quantum Instruction Overview
+
+This file summarizes the four standalone quantum programs:
+
+- `instruction_qsg.mem` for `QV.SINGLE`
+- `instruction_qpr.mem` for `QV.PAIR`
+- `instruction_qrg.mem` for `QV.ROT.G`
+- `instruction_qrv.mem` for `QV.ROT.V`
+
+Common setup assumptions
+
+- `VLEN = 128 bits`
+- `SEW = 8 bits` for every block
+- AVL is intentionally set to the maximum element capacity for each LMUL block
+- Therefore:
+  - `mf2 -> AVL=8,   VL=8`
+  - `m1  -> AVL=16,  VL=16`
+  - `m2  -> AVL=32,  VL=32`
+  - `m4  -> AVL=64,  VL=64`
+  - `m8  -> AVL=128, VL=128`
+
+Data-memory layout summary
+
+- Single-source programs (`qsg`, `qrg`)
+  - `0x1000` -> mf2 source bytes `0x11..0x18`
+  - `0x1100` -> m1  source bytes `0x31..0x40`
+  - `0x1200` -> m2  source bytes `0x51..0x70`
+  - `0x1300` -> m4  source bytes `0x71..0xB0`
+  - `0x1400` -> m8  source bytes `0x91..0x10` modulo 8-bit wraparound
+
+- Dual-source programs (`qpr`, `qrv`)
+  - `0x1000/0x1080` -> mf2 source-1/source-2
+  - `0x1100/0x1180` -> m1  source-1/source-2
+  - `0x1200/0x1280` -> m2  source-1/source-2
+  - `0x1300/0x1380` -> m4  source-1/source-2
+  - `0x1400/0x1480` -> m8  source-1/source-2
+
+QSG overview
+
+- Operation: `QV.SINGLE`
+- Semantic model in RTL: `result = elem1 ^ GateID[6:0]`
+- `elem2` in the exported quantum trace is the full 32-bit scalar value read from `rs2`
+- `elem3` in the exported quantum trace carries `GateID` plus the packed `m/block_imm` control bits
+
+Per-LMUL mapping
+
+- `mf2`
+  - Source load: `vle8.v v1, (0x1000)`
+  - Quantum op: `QV.SINGLE vd=v3, vs1=v1, rs2=x5`
+  - Expected destination: `v3`
+
+- `m1`
+  - Source load: `vle8.v v4, (0x1100)`
+  - Quantum op: `QV.SINGLE vd=v6, vs1=v4, rs2=x5`
+  - Expected destination: `v6`
+
+- `m2`
+  - Source load: `vle8.v v8, (0x1200)`
+  - Quantum op: `QV.SINGLE vd=v12, vs1=v8, rs2=x5`
+  - Expected destination: `v12`
+
+- `m4`
+  - Source load: `vle8.v v4, (0x1300)`
+  - Quantum op: `QV.SINGLE vd=v12, vs1=v4, rs2=x5`
+  - Expected destination: `v12`
+
+- `m8`
+  - Source load: `vle8.v v8, (0x1400)`
+  - Quantum op: `QV.SINGLE vd=v24, vs1=v8, rs2=x5`
+  - Expected destination: `v24`
+
+QPR overview
+
+- Operation: `QV.PAIR`
+- Semantic model in RTL: `result = elem1 ^ elem2`
+- `elem1` and `elem2` are both vector-sourced
+
+Per-LMUL mapping
+
+- `mf2`
+  - Source-1 load: `v1 <- 0x1000`
+  - Source-2 load: `v2 <- 0x1080`
+  - Quantum op: `QV.PAIR vd=v3, vs1=v1, vs2=v2`
+  - Expected destination: `v3`
+
+- `m1`
+  - Source-1 load: `v4 <- 0x1100`
+  - Source-2 load: `v5 <- 0x1180`
+  - Quantum op: `QV.PAIR vd=v6, vs1=v4, vs2=v5`
+  - Expected destination: `v6`
+
+- `m2`
+  - Source-1 load: `v8  <- 0x1200`
+  - Source-2 load: `v10 <- 0x1280`
+  - Quantum op: `QV.PAIR vd=v12, vs1=v8, vs2=v10`
+  - Expected destination: `v12`
+
+- `m4`
+  - Source-1 load: `v4 <- 0x1300`
+  - Source-2 load: `v8 <- 0x1380`
+  - Quantum op: `QV.PAIR vd=v12, vs1=v4, vs2=v8`
+  - Expected destination: `v12`
+
+- `m8`
+  - Source-1 load: `v0 <- 0x1400`
+  - Source-2 load: `v8 <- 0x1480`
+  - Quantum op: `QV.PAIR vd=v16, vs1=v0, vs2=v8`
+  - Expected destination: `v16`
+
+QRG overview
+
+- Operation: `QV.ROT.G`
+- Scalar setup: `x6 = 3`
+- Semantic model in RTL: `result = rotl8(elem1, 3)`
+- `elem2` in the exported quantum trace is expected to carry the scalar-derived shift value
+
+Per-LMUL mapping
+
+- `mf2`
+  - Source load: `v1 <- 0x1000`
+  - Quantum op: `QV.ROT.G vd=v3, vs1=v1, rs2=x6`
+  - Expected destination: `v3`
+
+- `m1`
+  - Source load: `v4 <- 0x1100`
+  - Quantum op: `QV.ROT.G vd=v6, vs1=v4, rs2=x6`
+  - Expected destination: `v6`
+
+- `m2`
+  - Source load: `v8 <- 0x1200`
+  - Quantum op: `QV.ROT.G vd=v12, vs1=v8, rs2=x6`
+  - Expected destination: `v12`
+
+- `m4`
+  - Source load: `v4 <- 0x1300`
+  - Quantum op: `QV.ROT.G vd=v12, vs1=v4, rs2=x6`
+  - Expected destination: `v12`
+
+- `m8`
+  - Source load: `v8 <- 0x1400`
+  - Quantum op: `QV.ROT.G vd=v24, vs1=v8, rs2=x6`
+  - Expected destination: `v24`
+
+QRV overview
+
+- Operation: `QV.ROT.V`
+- Semantic model in RTL: `result = rotl8(elem1, elem2[4:0])`
+- Both the source data and rotation amount are vector-sourced
+
+Per-LMUL mapping
+
+- `mf2`
+  - Source-1 load: `v1 <- 0x1000`
+  - Source-2 load: `v2 <- 0x1080`
+  - Quantum op: `QV.ROT.V vd=v3, vs1=v1, vs2=v2`
+  - Expected destination: `v3`
+
+- `m1`
+  - Source-1 load: `v4 <- 0x1100`
+  - Source-2 load: `v5 <- 0x1180`
+  - Quantum op: `QV.ROT.V vd=v6, vs1=v4, vs2=v5`
+  - Expected destination: `v6`
+
+- `m2`
+  - Source-1 load: `v8  <- 0x1200`
+  - Source-2 load: `v10 <- 0x1280`
+  - Quantum op: `QV.ROT.V vd=v12, vs1=v8, vs2=v10`
+  - Expected destination: `v12`
+
+- `m4`
+  - Source-1 load: `v4 <- 0x1300`
+  - Source-2 load: `v8 <- 0x1380`
+  - Quantum op: `QV.ROT.V vd=v12, vs1=v4, vs2=v8`
+  - Expected destination: `v12`
+
+- `m8`
+  - Source-1 load: `v0 <- 0x1400`
+  - Source-2 load: `v8 <- 0x1480`
+  - Quantum op: `QV.ROT.V vd=v16, vs1=v0, vs2=v8`
+  - Expected destination: `v16`
+
+What to expect in the trace ports
+
+- `op`
+  - `16` means `QV.SINGLE`
+  - `17` means `QV.PAIR`
+  - `18` means `QV.ROT.G`
+  - `19` means `QV.ROT.V`
+
+- `id`
+  - Internal in-flight instruction tag assigned by the vector core
+
+- `vd`
+  - Destination vector register number for the active quantum instruction
+
+- `elem1`
+  - Current exported quantum source slice, already reduced to the active `SEW=8` element
+
+- `elem2`
+  - Current exported second operand slice or scalar/immediate-derived slice, depending on the opcode
+Revision note
+- Every `instruction_*.mem` now inserts a guard `nop` (`00000013`) immediately after each `vsetvli`.
+- Reason: in this implementation, the vector configuration update is observed later than the `vsetvli` decode, so the guard `nop` gives `vtype/vl` time to settle before the following `vle8.v`.
+- Expected effect: no architectural state change; only timing separation between configuration and the first dependent vector load.
+- The `vsetvli` words were also corrected from `4C..F057` to `0C..F057`.
+- Reason: the previous encoding accidentally set an extra high bit in `vtypei`, which makes `vproc_decoder` treat the configuration as invalid because only the low 8 bits of the immediate are legal in this implementation.

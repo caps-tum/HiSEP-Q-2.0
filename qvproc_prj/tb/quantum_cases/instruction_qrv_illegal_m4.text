@@ -1,0 +1,46 @@
+Revision note
+- This is a negative QRV test image.
+- Purpose: verify that `QV.ROT.V` with `vs1=e8,m4` is rejected as illegal under the mixed-width rule.
+- The current QRV rule requires one-to-one pairing between `vs1=e8` and `vs2=e32`.
+- That would require `vs2` storage equivalent to `e32,m16`, which is beyond the current `LMUL<=m8` implementation.
+
+instruction_qrv_illegal_m4.mem line-by-line notes
+
+Line 1  04000293
+- `addi x5, x0, 64`
+- Sets AVL=64.
+
+Line 2  0C22F057
+- `vsetvli x0, x5, e8, m4`
+- Configures the illegal mixed-width QRV source case.
+
+Line 3  00000013
+- Guard `nop`.
+
+Line 4  00001537
+- `lui a0, 0x1`
+- Base pointer setup.
+
+Line 5  30050513
+- `addi a0, a0, 768`
+- Moves to the historical `m4` index block.
+
+Line 6  02050207
+- `vle8.v v4, (a0)`
+- Loads the `m4` index vector into `vs1`.
+
+Line 7  08050593
+- `addi a1, a0, 128`
+- Moves to the paired angle block.
+
+Line 8  0205E407
+- `vle32.v v8, (a1)`
+- Loads the angle vector candidate into `vs2`.
+
+Line 9  FE823657
+- `QV.ROT.V vd=v12, vs1=v4, vs2=v8`
+- Expected result: decoder marks this instruction illegal because `m4` is outside the supported QRV LMUL range.
+
+Line 10  0000006F
+- `jal x0, 0`
+- Loops after the negative test body.

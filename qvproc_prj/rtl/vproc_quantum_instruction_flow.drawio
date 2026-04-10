@@ -1,0 +1,83 @@
+<mxfile host="app.diagrams.net" modified="2026-03-16T13:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="quantum-flow" name="Quantum Instruction Flow">
+    <mxGraphModel dx="1900" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Quantum instruction execution flow (example: `QV.SINGLE` -&gt; `ELEM_QSINGLE`)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=24;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="10" width="1200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="This page follows the concrete path added in `vproc_decoder.sv` for funct6=`111100`, funct3=`000` (`QV.SINGLE`).&#xa;It shows both module boundaries and the payload transformation of operands/control fields." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;align=left;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="20" y="50" width="720" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s0" value="1. Scalar core issues custom OP-V instruction&#xa;through CPI/XIF offload path&#xa;Instruction carries `vs1`, `vs2`, `vd`, `vm`, EEW/VL context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="80" y="160" width="290" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="2. `vproc_top` converts CPI &lt;-&gt; `vproc_xif`&#xa;and forwards issue request to `vproc_core`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="80" y="300" width="290" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="3. `vproc_decoder` matches quantum opcode&#xa;`{funct6, funct3} = {111100, 000}`&#xa;and emits:&#xa;`unit_o = UNIT_ELEM`&#xa;`mode_o.elem.op = ELEM_QSINGLE`&#xa;`mode_o.elem.xreg = 0`&#xa;`mode_o.elem.masked = instr_masked`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;align=left;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="430" width="350" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="4. Decoder remaps operands for ELEM datapath&#xa;`rs2_o.vreg = 1` and `rs2_o.r.vaddr = instr_vs1`&#xa;`rs1_o.vreg = 0`, `rs1_o.xreg = 0`&#xa;`rs1_o.r.xval = {27'b0, instr_vs2}`&#xa;Meaning: vector payload comes from `vs1`;&#xa;5-bit gate/immediate is packed into scalar operand slot" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;align=left;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="620" width="380" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" value="5. Instruction enters `vproc_queue` / hazard bookkeeping&#xa;`vproc_pending_wr` tracks destination conflicts;&#xa;`vproc_dispatcher` waits until an ELEM-capable pipeline lane is ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="80" y="810" width="360" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" value="6. `vproc_pipeline_wrapper` builds initial lane state&#xa;For `ELEM_QSINGLE`:&#xa;`elem_flush = 0`&#xa;`elem_vs2_data = 1`&#xa;`elem_vs2_mask = 0`&#xa;`elem_vs2_dyn_addr = 0`&#xa;So the op is a regular element-wise ELEM op with no post-flush and no gather/mask side source" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;align=left;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="520" y="160" width="390" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="s6" value="7. Operand routing inside pipeline wrapper / unpack&#xa;`op0` uses `pipe_in_data_i.rs2` => remapped `vs1` vector data&#xa;`op1` uses `pipe_in_data_i.rs1` => scalar/immediate slot&#xa;mask operand comes from `v0` only if `vm=0`&#xa;`vproc_vregunpack` reads vector data from `vproc_vregfile` and produces per-element slices" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;align=left;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="520" y="360" width="430" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="s7" value="8. `vproc_unit_mux` selects the ELEM unit&#xa;`vproc_unit_wrapper` calls `vproc_elem` with:&#xa;`pipe_in_op1_i = pipe_in_op_data_i[0][31:0]`&#xa;`pipe_in_op2_i = pipe_in_op_data_i[1][31:0]`&#xa;`pipe_in_mask_i = pipe_in_op_data_i[OP_CNT-1][0]`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;align=left;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="520" y="560" width="420" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="s8" value="9. `vproc_elem` executes `ELEM_QSINGLE`&#xa;`elem1 = pipe_in_op1_i` (current element from remapped `vs1`)&#xa;`elem2 = pipe_in_op2_i` (decoder-packed immediate path)&#xa;`v0msk = pipe_in_mask_i | ~masked`&#xa;Operation implemented today:&#xa;`result_d = elem1 ^ {27'b0, elem2[4:0]}`&#xa;`result_mask_d = ~vl_part_0 &amp; v0msk`&#xa;`result_valid_d = 1`&#xa;So each active element is transformed by XOR with the 5-bit quantum selector" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;align=left;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="520" y="740" width="470" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="s9" value="10. ELEM wrapper packages element results back into vector write stream&#xa;Because `mode.elem.xreg = 0`, result is vector writeback, not scalar XREG writeback&#xa;No flush sequence is inserted for `ELEM_QSINGLE`&#xa;`pipe_out_res_store_o[0]` asserts when packed vector word is ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;align=left;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="220" width="420" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="s10" value="11. `vproc_vregpack` accumulates element-wise outputs into vector-word writes&#xa;Then `vproc_vreg_wr_mux` arbitrates among pipelines&#xa;and writes final masked data back into `vproc_vregfile` at `rd`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;align=left;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="420" width="410" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="s11" value="12. Completion path&#xa;Pipeline marks instruction done&#xa;pending-write bits are cleared&#xa;If the instruction produced no scalar/xreg or LSU side effects, `vproc_result` only needs the normal completion bookkeeping" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;align=left;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="600" width="390" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="branch" value="Quantum opcode differences at the ELEM stage&#xa;`ELEM_QSINGLE`: `result = elem1 ^ imm5`&#xa;`ELEM_QPAIR`: `result = elem1 ^ elem2`&#xa;`ELEM_QROTG`: `result = rotl_elem(elem1, xval[4:0], eew)`&#xa;`ELEM_QROTV`: `result = rotl_elem(elem1, elem2[4:0], eew)`&#xa;The front half of the flow is almost identical; the main differences are decoder remap and the arithmetic inside `vproc_elem`." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;align=left;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="780" width="500" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="decision" value="Masked off or outside VL?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="980" width="170" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="yesbox" value="Yes&#xa;write mask = 0&#xa;element update suppressed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="980" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="nobox" value="No&#xa;packed result reaches `vproc_vregfile`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="810" y="980" width="180" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="s0" target="s1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="s1" target="s2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="s2" target="s3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="s3" target="s4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="s4" target="s5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="s5" target="s6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="s6" target="s7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="s7" target="s8"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="s8" target="s9"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="s9" target="s10"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="s10" target="s11"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e12" value="`result_mask_d` decides" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;dashed=1;" edge="1" parent="1" source="s8" target="decision"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e13" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="decision" target="nobox"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e14" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="decision" target="yesbox"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e15" value="effective write suppressed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;dashed=1;" edge="1" parent="1" source="yesbox" target="s11"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e16" value="normal writeback" style="edgeStyle=orthogonalEdgeStyle;rounded=0;jettySize=auto;html=1;endArrow=block;strokeWidth=2;dashed=1;" edge="1" parent="1" source="nobox" target="s11"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

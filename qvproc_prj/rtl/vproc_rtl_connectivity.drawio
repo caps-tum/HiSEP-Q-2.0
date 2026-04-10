@@ -1,0 +1,107 @@
+<mxfile host="app.diagrams.net" modified="2026-03-16T12:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="vproc-rtl-connectivity" name="RTL Connectivity">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="qvproc_vivado_predef/rtl connectivity" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=24;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="10" width="520" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="note" value="Based on structural analysis of `/rtl`.&#xa;`vproc_core` always contains the shown decode/dispatch/vreg/writeback flow.&#xa;`vproc_pipeline_wrapper` instantiates `PIPE_CNT` configuration-dependent lanes, each reducing to `vproc_pipeline -&gt; vproc_vregunpack -&gt; vproc_unit_mux -&gt; unit wrapper(s) -&gt; vproc_vregpack`." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;align=left;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="20" y="50" width="560" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="extmem" value="External Memory Bus&#xa;`mem_*`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1800" y="140" width="180" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="scalar" value="Scalar Core&#xa;`ibex_top`&#xa;instr/data + CPI/XIF side" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="230" width="210" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="xif" value="`vproc_xif` interface&#xa;issue / commit / mem / mem_result / result" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="245" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="top" value="`vproc_top`&#xa;integration + reset sync + memory/data arbiters + optional caches" style="swimlane;html=1;whiteSpace=wrap;rounded=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=16;fontStyle=1;horizontal=0;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="20" y="160" width="1760" height="800" as="geometry" />
+        </mxCell>
+        <mxCell id="icache" value="`vproc_cache`&#xa;I-cache&#xa;optional (`ICACHE_SZ != 0`)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="top">
+          <mxGeometry x="630" y="60" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="darb" value="Data Arbiter&#xa;scalar `sdata_*` + vector `vdata_*`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="top">
+          <mxGeometry x="640" y="210" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="dcache" value="`vproc_cache`&#xa;D-cache / vcache&#xa;optional (`DCACHE_SZ != 0`)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="top">
+          <mxGeometry x="910" y="200" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="marb" value="Memory Arbiter&#xa;I-side vs D-side arbitration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="top">
+          <mxGeometry x="1200" y="180" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="csr" value="Vector CSR bridge&#xa;`vstart`, `vxsat`, `vxrm`, `vl`, `vtype`, `vlenb`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="top">
+          <mxGeometry x="340" y="90" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="vcore" value="`vproc_core`" style="swimlane;html=1;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=16;fontStyle=1;horizontal=0;startSize=26;" vertex="1" parent="top">
+          <mxGeometry x="80" y="360" width="1570" height="390" as="geometry" />
+        </mxCell>
+        <mxCell id="decode" value="`vproc_decoder`&#xa;decode XIF issue into vector op + CSR actions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="vcore">
+          <mxGeometry x="30" y="60" width="170" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="iq" value="Instruction queue&#xa;`vproc_queue`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="vcore">
+          <mxGeometry x="240" y="60" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="pendwr" value="Pending write tracker&#xa;`vproc_pending_wr`&#xa;hazard bookkeeping" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="vcore">
+          <mxGeometry x="240" y="190" width="170" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="dispatch" value="`vproc_dispatcher`&#xa;routes queued ops to eligible pipeline lane(s)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="vcore">
+          <mxGeometry x="440" y="60" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="vregfile" value="`vproc_vregfile`&#xa;vector register file&#xa;mask read on `v0` + multiport reads/writes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="vcore">
+          <mxGeometry x="440" y="190" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="pipes" value="`vproc_pipeline_wrapper` lanes (`PIPE_CNT`)&#xa;each lane:&#xa;`vproc_pipeline`&#xa;`vproc_vregunpack`&#xa;`vproc_unit_mux`&#xa;unit wrapper(s): LSU / ALU / MUL / SLD / ELEM&#xa;`vproc_vregpack`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;align=left;spacing=6;" vertex="1" parent="vcore">
+          <mxGeometry x="700" y="50" width="300" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="lsuunit" value="LSU path inside eligible lane&#xa;`vproc_lsu` + local queues&#xa;drives XIF mem/mem_result" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="vcore">
+          <mxGeometry x="1040" y="60" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="elemunit" value="ELEM path inside eligible lane&#xa;`vproc_elem`&#xa;can produce scalar XREG writeback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="vcore">
+          <mxGeometry x="1040" y="180" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="wrmux" value="`vproc_vreg_wr_mux`&#xa;merges per-pipeline writes + pending-clear info" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="vcore">
+          <mxGeometry x="1070" y="300" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="resultif" value="`vproc_result`&#xa;combines empty / LSU / XREG / CSR completions&#xa;drives XIF `result_*`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="vcore">
+          <mxGeometry x="1320" y="120" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="pendmap" value="`pend_vreg_wr_map_o`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="vcore">
+          <mxGeometry x="1320" y="300" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="instr/data" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="scalar" target="icache"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" value="instruction fetch" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="icache" target="marb"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" value="scalar loads/stores" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="scalar" target="darb"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" value="vector mem req/rsp" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="xif" target="darb"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" value="merged data path" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="darb" target="dcache"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" value="memory-side data" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="dcache" target="marb"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" value="top-level `mem_*`" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="marb" target="extmem"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" value="CPI/XIF offload" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="scalar" target="xif"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e9" value="CSR R/W" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;dashed=1;" edge="1" parent="1" source="scalar" target="csr"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e10" value="issue / commit / result / mem" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="xif" target="vcore"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e11" value="vector CSRs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;dashed=1;" edge="1" parent="1" source="csr" target="vcore"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e12" value="decoded op" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="vcore" source="decode" target="iq"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e13" value="pending write intent" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;dashed=1;" edge="1" parent="vcore" source="decode" target="pendwr"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e14" value="queued instructions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="vcore" source="iq" target="dispatch"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e15" value="hazard state / clear" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;dashed=1;" edge="1" parent="vcore" source="pendwr" target="dispatch"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e16" value="dispatch to lanes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="vcore" source="dispatch" target="pipes"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e17" value="vreg read addr/data + v0 mask" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=both;strokeWidth=2;" edge="1" parent="vcore" source="vregfile" target="pipes"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e18" value="per-pipeline vreg writes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="vcore" source="pipes" target="wrmux"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e19" value="merged writes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="vcore" source="wrmux" target="vregfile"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e20" value="LSU subpath" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;dashed=1;" edge="1" parent="vcore" source="pipes" target="lsuunit"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e21" value="ELEM subpath" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;dashed=1;" edge="1" parent="vcore" source="pipes" target="elemunit"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e22" value="trans_complete" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="vcore" source="lsuunit" target="resultif"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e23" value="xreg writeback" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="vcore" source="elemunit" target="resultif"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e24" value="CSR/empty completions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;dashed=1;" edge="1" parent="vcore" source="decode" target="resultif"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e25" value="pending write clear map" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;dashed=1;" edge="1" parent="vcore" source="wrmux" target="pendmap"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e26" value="hazard visibility" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;dashed=1;" edge="1" parent="vcore" source="pendmap" target="pipes"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e27" value="mem/mem_result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="vcore" target="xif"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e28" value="result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="resultif" target="xif"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

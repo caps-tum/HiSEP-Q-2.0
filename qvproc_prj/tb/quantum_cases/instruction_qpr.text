@@ -1,0 +1,220 @@
+Revision note
+- The current `instruction_qpr.mem` inserts a guard `nop` (`00000013`) immediately after each `vsetvli`.
+- Reason: this implementation may reject a following `vle8.v` if `vtype/vl` has not become visible yet.
+- New guard-`nop` lines are 3, 10, 18, 26, and 35.
+- For each inserted `nop`, all subsequent line numbers in the original walkthrough shift down by 1.
+- Each guard `nop` decodes to `addi x0, x0, 0` and is expected to leave architectural state unchanged while giving the vector configuration path one extra cycle to settle.
+- The `vsetvli` encodings were also corrected from `4C..F057` to `0C..F057`.
+- Reason: the previous words set an extra high bit in the `vtypei` immediate, so the decoder saw `rs2_o.r.xval[31:8] != 0` and marked the configuration invalid.
+
+instruction_qpr.mem line-by-line notes
+
+Line 1  00800293
+- `addi x5, x0, 8`
+- Sets AVL=8 for the `e8,mf2` block.
+- Expected effect: `x5=8`.
+
+Line 2  4C72F057
+- `vsetvli x0, x5, e8, mf2`
+- Configures `SEW=8`, `LMUL=mf2`, `VL=8`.
+- Expected effect: following vector work is limited to 8 logical elements.
+
+Line 3  00001537
+- `lui a0, 0x1`
+- Sets the data base pointer.
+- Expected effect: `a0=0x1000`.
+
+Line 4  02050087
+- `vle8.v v1, (a0)`
+- Loads the first `mf2` source vector.
+- Expected effect: `v1[0..7]={0x11..0x18}`.
+
+Line 5  08050593
+- `addi a1, a0, 128`
+- Points `a1` at the second `mf2` source vector block.
+- Expected effect: `a1=0x1080`.
+
+Line 6  02058107
+- `vle8.v v2, (a1)`
+- Loads the second `mf2` source vector.
+- Expected effect: `v2[0..7]={0x21..0x28}`.
+
+Line 7  F62081D7
+- `QV.PAIR vd=v3, vs1=v1, vs2=v2`
+- Runs the pair-style quantum operation for `mf2`.
+- Expected quantum trace: `elem1` follows `0x11..0x18`, `elem2` follows `0x21..0x28`.
+- Expected quantum result semantics: each slice computes `elem1 ^ elem2`.
+- Expected destination: `vd=v3`.
+
+Line 8  01000293
+- `addi x5, x0, 16`
+- Sets AVL=16 for `e8,m1`.
+- Expected effect: `x5=16`.
+
+Line 9  4C02F057
+- `vsetvli x0, x5, e8, m1`
+- Configures `SEW=8`, `LMUL=m1`, `VL=16`.
+- Expected effect: following vector work covers 16 elements.
+
+Line 10  00001537
+- `lui a0, 0x1`
+- Restores the data-memory base.
+- Expected effect: `a0=0x1000`.
+
+Line 11  10050513
+- `addi a0, a0, 256`
+- Moves to the `m1` source-1 block.
+- Expected effect: `a0=0x1100`.
+
+Line 12  02050207
+- `vle8.v v4, (a0)`
+- Loads 16 bytes into the `m1` source vector.
+- Expected effect: `v4[0..15]={0x31..0x40}`.
+
+Line 13  08050593
+- `addi a1, a0, 128`
+- Moves to the paired `m1` source-2 block.
+- Expected effect: `a1=0x1180`.
+
+Line 14  02058287
+- `vle8.v v5, (a1)`
+- Loads the second `m1` source vector.
+- Expected effect: `v5[0..15]={0x41..0x50}`.
+
+Line 15  F6520357
+- `QV.PAIR vd=v6, vs1=v4, vs2=v5`
+- Runs the `m1` pair-style quantum operation.
+- Expected quantum trace: `elem1` follows `0x31..0x40`, `elem2` follows `0x41..0x50`.
+- Expected quantum result semantics: each slice computes `elem1 ^ elem2`.
+- Expected destination: `vd=v6`.
+
+Line 16  02000293
+- `addi x5, x0, 32`
+- Sets AVL=32 for `e8,m2`.
+- Expected effect: `x5=32`.
+
+Line 17  4C12F057
+- `vsetvli x0, x5, e8, m2`
+- Configures `SEW=8`, `LMUL=m2`, `VL=32`.
+- Expected effect: following vector work covers 32 elements.
+
+Line 18  00001537
+- `lui a0, 0x1`
+- Restores the data-memory base.
+- Expected effect: `a0=0x1000`.
+
+Line 19  20050513
+- `addi a0, a0, 512`
+- Moves to the `m2` source-1 block.
+- Expected effect: `a0=0x1200`.
+
+Line 20  02050407
+- `vle8.v v8, (a0)`
+- Loads 32 bytes into the `m2` source group.
+- Expected effect: `v8` group source bytes are `{0x51..0x70}`.
+
+Line 21  08050593
+- `addi a1, a0, 128`
+- Moves to the `m2` source-2 block.
+- Expected effect: `a1=0x1280`.
+
+Line 22  02058507
+- `vle8.v v10, (a1)`
+- Loads the second `m2` source group.
+- Expected effect: second source bytes are `{0x61..0x80}`.
+
+Line 23  F6A40657
+- `QV.PAIR vd=v12, vs1=v8, vs2=v10`
+- Runs the `m2` pair-style quantum operation.
+- Expected quantum trace: `elem1` walks the first `m2` source bytes, `elem2` walks the second.
+- Expected quantum result semantics: each slice computes `elem1 ^ elem2`.
+- Expected destination: `vd=v12`.
+
+Line 24  04000293
+- `addi x5, x0, 64`
+- Sets AVL=64 for `e8,m4`.
+- Expected effect: `x5=64`.
+
+Line 25  4C22F057
+- `vsetvli x0, x5, e8, m4`
+- Configures `SEW=8`, `LMUL=m4`, `VL=64`.
+- Expected effect: following vector work covers 64 elements.
+
+Line 26  00001537
+- `lui a0, 0x1`
+- Restores the data-memory base.
+- Expected effect: `a0=0x1000`.
+
+Line 27  30050513
+- `addi a0, a0, 768`
+- Moves to the `m4` source-1 block.
+- Expected effect: `a0=0x1300`.
+
+Line 28  02050207
+- `vle8.v v4, (a0)`
+- Loads 64 bytes into the `m4` source group rooted at `v4`.
+- Expected effect: source-1 bytes are `{0x71..0xB0}`.
+
+Line 29  08050593
+- `addi a1, a0, 128`
+- Moves to the `m4` source-2 block.
+- Expected effect: `a1=0x1380`.
+
+Line 30  02058407
+- `vle8.v v8, (a1)`
+- Loads the second `m4` source group rooted at `v8`.
+- Expected effect: source-2 bytes are `{0x81..0xC0}`.
+
+Line 31  F6820657
+- `QV.PAIR vd=v12, vs1=v4, vs2=v8`
+- Runs the `m4` pair-style quantum operation.
+- Expected quantum trace: `elem1` walks the `m4` source-1 bytes, `elem2` walks the `m4` source-2 bytes.
+- Expected quantum result semantics: each slice computes `elem1 ^ elem2`.
+- Expected destination: `vd=v12`.
+
+Line 32  08000293
+- `addi x5, x0, 128`
+- Sets AVL=128 for `e8,m8`.
+- Expected effect: `x5=128`.
+
+Line 33  4C32F057
+- `vsetvli x0, x5, e8, m8`
+- Configures `SEW=8`, `LMUL=m8`, `VL=128`.
+- Expected effect: following vector work covers 128 elements.
+
+Line 34  00001537
+- `lui a0, 0x1`
+- Restores the data-memory base.
+- Expected effect: `a0=0x1000`.
+
+Line 35  40050513
+- `addi a0, a0, 1024`
+- Moves to the `m8` source-1 block.
+- Expected effect: `a0=0x1400`.
+
+Line 36  02050007
+- `vle8.v v0, (a0)`
+- Loads 128 bytes into the `m8` source-1 group rooted at `v0`.
+- Expected effect: source-1 bytes are `{0x91..0x10}` modulo byte wraparound.
+
+Line 37  08050593
+- `addi a1, a0, 128`
+- Moves to the `m8` source-2 block.
+- Expected effect: `a1=0x1480`.
+
+Line 38  02058407
+- `vle8.v v8, (a1)`
+- Loads the `m8` source-2 group rooted at `v8`.
+- Expected effect: source-2 bytes are `{0xA1..0x20}` modulo byte wraparound.
+
+Line 39  F4800857
+- `QV.PAIR vd=v16, vs1=v0, vs2=v8`
+- Runs the `m8` pair-style quantum operation.
+- Expected quantum trace: `elem1` walks the `m8` source-1 bytes, `elem2` walks the `m8` source-2 bytes.
+- Expected quantum result semantics: each slice computes `elem1 ^ elem2`.
+- Expected destination: `vd=v16`.
+
+Line 40  0000006F
+- `jal x0, 0`
+- Stops forward scalar program flow.
+- Expected effect: the core parks after the pair-test body has finished issuing.
