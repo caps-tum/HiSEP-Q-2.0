@@ -2,7 +2,7 @@
 
 **A RISC-V Vector Extension Architecture for Scalable Qubit Control**
 
-HiSEP-Q 2.0 is a quantum control processor that extends the RISC-V V (RVV) vector ISA with four new quantum instructions. A single RISC-V program can configure, schedule, and fire gates across up to 256 physical qubits — no separate pulse sequencer required.
+HiSEP-Q 2.0 is a quantum control processor that extends the RISC-V V (RVV) vector ISA with four new quantum instructions. A single RISC-V program can configure, schedule, and fire gates across up to 256 physical qubits (can be easily extended to reconfig vector settings) — no separate pulse sequencer required.
 
 ---
 
