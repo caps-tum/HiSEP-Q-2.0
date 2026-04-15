@@ -1,0 +1,75 @@
+`timescale 1ns / 1ps
+// time_controller.v
+//
+// Reads one (t_inst, opcode) entry from the FIFO, waits until the global
+// counter t_cnt reaches t_inst, then drives o_data = opcode for one cycle.
+//
+// State machine:
+//   IDLE  : assert fifo_rd_en; when FIFO is non-empty go to WAIT
+//   WAIT  : hold until t_cnt + 1 == t_inst, then go to ISSUE
+//   ISSUE : drive o_data = opcode for one cycle, return to IDLE
+//
+// The gate appears on o_data at the cycle where t_cnt == t_inst.
+
+module time_controller #(
+    parameter TIME_WIDTH = 20,
+    parameter OP_WIDTH   = 6
+)(
+    input  clk,
+    input  reset,
+    input  [TIME_WIDTH-1:0] t_cnt,
+
+    output reg fifo_rd_en,
+    input  [TIME_WIDTH+OP_WIDTH-1:0] fifo_data,
+    input  fifo_empty,
+
+    output reg [OP_WIDTH-1:0] o_data,
+    output reg                o_valid     // pulses for exactly one cycle when gate is issued
+);
+
+    localparam IDLE  = 2'b00;
+    localparam WAIT  = 2'b01;
+    localparam ISSUE = 2'b10;
+
+    wire [OP_WIDTH-1:0]   opcode = fifo_data[OP_WIDTH-1 : 0];
+    wire [TIME_WIDTH-1:0] t_inst = fifo_data[TIME_WIDTH+OP_WIDTH-1 : OP_WIDTH];
+
+    reg [1:0] state, next_state;
+
+    // Next-state logic
+    always @(*) begin
+        case (state)
+            IDLE:  next_state = fifo_empty ? IDLE : WAIT;
+            // Use <= so that a qubit whose FIFO was written late (after
+            // dispatch_time was already approaching) still fires as soon
+            // as it enters WAIT, rather than getting stuck forever.
+            WAIT:  next_state = (t_inst <= (t_cnt + 1'b1)) ? ISSUE : WAIT;
+            ISSUE: next_state = IDLE;
+            default: next_state = IDLE;
+        endcase
+    end
+
+    // State register
+    always @(posedge clk) begin
+        if (reset)
+            state <= IDLE;
+        else
+            state <= next_state;
+    end
+
+    // Output logic
+    always @(*) begin
+        fifo_rd_en = 1'b0;
+        o_data     = {OP_WIDTH{1'b0}};
+        o_valid    = 1'b0;
+        case (state)
+            IDLE:  fifo_rd_en = 1'b1;
+            ISSUE: begin
+                o_data  = opcode;
+                o_valid = 1'b1;
+            end
+            default: ;
+        endcase
+    end
+
+endmodule

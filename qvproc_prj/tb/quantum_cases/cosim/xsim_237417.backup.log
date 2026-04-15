@@ -1,0 +1,126 @@
+
+****** xsim v2024.2 (64-bit)
+  **** SW Build 5239630 on Fri Nov 08 22:34:34 MST 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Wed Apr 15 16:17:47 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/vproc_qdisp_bell_tb_sim/xsim_script.tcl
+# xsim {vproc_qdisp_bell_tb_sim} -testplusarg INSTR_MEM_FILE=/home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem -testplusarg DATA_MEM_FILE=/home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+[QDISP_TB][INIT] instruction mem : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem
+[QDISP_TB][INIT] data mem        : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem
+[QDISP_TB][INIT] Bell co-simulation started.
+[QDISP_TB][INIT] NUM_QUBITS=16  FIXED_LATENCY=16  TIME_WIDTH=20
+              140000: Illegal instruction (hart 0) at PC 0x00000080: 0x00010413
+[QDISP_TB][cycle=18][INSTR] 06600313  addi x6, x0, 0x66          
+[QDISP_TB][cycle=19][INSTR] 05500393  addi x7, x0, 0x55          
+[QDISP_TB][cycle=20][INSTR] 00800293  addi x5, x0, 8             
+[QDISP_TB][cycle=21][INSTR] 0c72f057  vsetvli x0, x5, e8, mf2    
+[QDISP_TB][cycle=24][INSTR] 00000013  nop                        
+[QDISP_TB][cycle=25][INSTR] 00001537  lui a0, 0x1                
+[QDISP_TB][cycle=26][INSTR] 02050087  vle8.v v1, (a0)            
+[QDISP_TB][cycle=27][INSTR] 00850593  addi a1, a0, 8             
+[QDISP_TB][cycle=28][INSTR] 02058107  vle8.v v2, (a1)            
+[QDISP_TB][cycle=31][MEASURE] qvsg_meas=1 start
+[QDISP_TB][cycle=48][QX_START] op=16(QV.SINGLE   ) id=3 vd=12 elem2=00000055 elem3=c8000600 ready=1
+[QDISP_TB][cycle=48][QX] idx=0 op=QV.SINGLE    id=3 elem1=00000000 elem2=00000055 elem3=c8000600 ready=1 t_cnt=38
+[QDISP_TB][cycle=49][QX] idx=1 op=QV.SINGLE    id=3 elem1=00000002 elem2=00000055 elem3=c8000600 ready=1 t_cnt=39
+[QDISP_TB][cycle=50][QX] idx=2 op=QV.SINGLE    id=3 elem1=00000004 elem2=00000055 elem3=c8000600 ready=1 t_cnt=40
+[QDISP_TB][cycle=51][QX] idx=3 op=QV.SINGLE    id=3 elem1=00000006 elem2=00000055 elem3=c8000600 ready=1 t_cnt=41
+[QDISP_TB][cycle=52][QX] idx=4 op=QV.SINGLE    id=3 elem1=00000008 elem2=00000055 elem3=c8000600 ready=1 t_cnt=42
+[QDISP_TB][cycle=53][QX] idx=5 op=QV.SINGLE    id=3 elem1=0000000a elem2=00000055 elem3=c8000600 ready=1 t_cnt=43
+[QDISP_TB][cycle=54][QX] idx=6 op=QV.SINGLE    id=3 elem1=0000000c elem2=00000055 elem3=c8000600 ready=1 t_cnt=44
+[QDISP_TB][cycle=55][QX] idx=7 op=QV.SINGLE    id=3 elem1=0000000e elem2=00000055 elem3=c8000600 ready=1 t_cnt=45
+[AWG][t_cnt=50] valid_mask=0101010101010101  (cycle=60)
+[AWG][t_cnt=50]   qubit[00]  gate=0x64
+[AWG][t_cnt=50]   qubit[02]  gate=0x64
+[AWG][t_cnt=50]   qubit[04]  gate=0x64
+[AWG][t_cnt=50]   qubit[06]  gate=0x64
+[AWG][t_cnt=50]   qubit[08]  gate=0x64
+[AWG][t_cnt=50]   qubit[10]  gate=0x64
+[AWG][t_cnt=50]   qubit[12]  gate=0x64
+[AWG][t_cnt=50]   qubit[14]  gate=0x64
+[QDISP_TB][cycle=71][QX_START] op=17(QV.PAIR     ) id=4 vd=12 elem2=00000001 elem3=00000600 ready=1
+[QDISP_TB][cycle=71][QX] idx=8 op=QV.PAIR      id=4 elem1=00000000 elem2=00000001 elem3=00000600 ready=1 t_cnt=61
+[QDISP_TB][cycle=72][QX] idx=9 op=QV.PAIR      id=4 elem1=00000002 elem2=00000003 elem3=00000600 ready=1 t_cnt=62
+[QDISP_TB][cycle=73][QX] idx=10 op=QV.PAIR      id=4 elem1=00000004 elem2=00000005 elem3=00000600 ready=1 t_cnt=63
+[QDISP_TB][cycle=74][QX] idx=11 op=QV.PAIR      id=4 elem1=00000006 elem2=00000007 elem3=00000600 ready=1 t_cnt=64
+[QDISP_TB][cycle=75][QX] idx=12 op=QV.PAIR      id=4 elem1=00000008 elem2=00000009 elem3=00000600 ready=1 t_cnt=65
+[QDISP_TB][cycle=76][QX] idx=13 op=QV.PAIR      id=4 elem1=0000000a elem2=0000000b elem3=00000600 ready=1 t_cnt=66
+[QDISP_TB][cycle=77][QX] idx=14 op=QV.PAIR      id=4 elem1=0000000c elem2=0000000d elem3=00000600 ready=1 t_cnt=67
+[QDISP_TB][cycle=78][QX] idx=15 op=QV.PAIR      id=4 elem1=0000000e elem2=0000000f elem3=00000600 ready=1 t_cnt=68
+[AWG][t_cnt=73] valid_mask=1111111111111111  (cycle=83)
+[AWG][t_cnt=73]   qubit[00]  gate=0x00
+[AWG][t_cnt=73]   qubit[01]  gate=0x00
+[AWG][t_cnt=73]   qubit[02]  gate=0x00
+[AWG][t_cnt=73]   qubit[03]  gate=0x00
+[AWG][t_cnt=73]   qubit[04]  gate=0x00
+[AWG][t_cnt=73]   qubit[05]  gate=0x00
+[AWG][t_cnt=73]   qubit[06]  gate=0x00
+[AWG][t_cnt=73]   qubit[07]  gate=0x00
+[AWG][t_cnt=73]   qubit[08]  gate=0x00
+[AWG][t_cnt=73]   qubit[09]  gate=0x00
+[AWG][t_cnt=73]   qubit[10]  gate=0x00
+[AWG][t_cnt=73]   qubit[11]  gate=0x00
+[AWG][t_cnt=73]   qubit[12]  gate=0x00
+[AWG][t_cnt=73]   qubit[13]  gate=0x00
+[AWG][t_cnt=73]   qubit[14]  gate=0x00
+[AWG][t_cnt=73]   qubit[15]  gate=0x00
+[QDISP_TB][cycle=94][QX_START] op=16(QV.SINGLE   ) id=5 vd=12 elem2=00000055 elem3=d0000600 ready=1
+[QDISP_TB][cycle=94][QX] idx=16 op=QV.SINGLE    id=5 elem1=00000000 elem2=00000055 elem3=d0000600 ready=1 t_cnt=84
+[QDISP_TB][cycle=95][QX] idx=17 op=QV.SINGLE    id=5 elem1=00000002 elem2=00000055 elem3=d0000600 ready=1 t_cnt=85
+[QDISP_TB][cycle=96][QX] idx=18 op=QV.SINGLE    id=5 elem1=00000004 elem2=00000055 elem3=d0000600 ready=1 t_cnt=86
+[QDISP_TB][cycle=97][QX] idx=19 op=QV.SINGLE    id=5 elem1=00000006 elem2=00000055 elem3=d0000600 ready=1 t_cnt=87
+[QDISP_TB][cycle=98][QX] idx=20 op=QV.SINGLE    id=5 elem1=00000008 elem2=00000055 elem3=d0000600 ready=1 t_cnt=88
+[QDISP_TB][cycle=99][QX] idx=21 op=QV.SINGLE    id=5 elem1=0000000a elem2=00000055 elem3=d0000600 ready=1 t_cnt=89
+[QDISP_TB][cycle=100][QX] idx=22 op=QV.SINGLE    id=5 elem1=0000000c elem2=00000055 elem3=d0000600 ready=1 t_cnt=90
+[QDISP_TB][cycle=101][QX] idx=23 op=QV.SINGLE    id=5 elem1=0000000e elem2=00000055 elem3=d0000600 ready=1 t_cnt=91
+[QDISP_TB][cycle=102][MEASURE] measure_issued_done=1
+[QDISP_TB][cycle=102][WAIT] ADC delay = 50 cycles
+[AWG][t_cnt=96] valid_mask=0101010101010101  (cycle=106)
+[AWG][t_cnt=96]   qubit[00]  gate=0x68
+[AWG][t_cnt=96]   qubit[02]  gate=0x68
+[AWG][t_cnt=96]   qubit[04]  gate=0x68
+[AWG][t_cnt=96]   qubit[06]  gate=0x68
+[AWG][t_cnt=96]   qubit[08]  gate=0x68
+[AWG][t_cnt=96]   qubit[10]  gate=0x68
+[AWG][t_cnt=96]   qubit[12]  gate=0x68
+[AWG][t_cnt=96]   qubit[14]  gate=0x68
+[QDISP_TB][cycle=153][MEASURE] measure_done=1 (sent)
+[QDISP_TB][cycle=155][MEASURE] qvsg_meas=0 resume
+[QDISP_TB][cycle=157][INSTR] 0000006f  jal x0, 0                  
+[QDISP_TB][cycle=165][QX_START] op=16(QV.SINGLE   ) id=6 vd=12 elem2=00000066 elem3=f0000600 ready=1
+[QDISP_TB][cycle=165][QX] idx=24 op=QV.SINGLE    id=6 elem1=00000001 elem2=00000066 elem3=f0000600 ready=1 t_cnt=155
+[QDISP_TB][cycle=165][RESUME] first post-measure event seen
+[QDISP_TB][cycle=166][QX] idx=25 op=QV.SINGLE    id=6 elem1=00000003 elem2=00000066 elem3=f0000600 ready=1 t_cnt=156
+[QDISP_TB][cycle=167][QX] idx=26 op=QV.SINGLE    id=6 elem1=00000005 elem2=00000066 elem3=f0000600 ready=1 t_cnt=157
+[QDISP_TB][cycle=168][QX] idx=27 op=QV.SINGLE    id=6 elem1=00000007 elem2=00000066 elem3=f0000600 ready=1 t_cnt=158
+[QDISP_TB][cycle=169][QX] idx=28 op=QV.SINGLE    id=6 elem1=00000009 elem2=00000066 elem3=f0000600 ready=1 t_cnt=159
+[QDISP_TB][cycle=170][QX] idx=29 op=QV.SINGLE    id=6 elem1=0000000b elem2=00000066 elem3=f0000600 ready=1 t_cnt=160
+[QDISP_TB][cycle=171][QX] idx=30 op=QV.SINGLE    id=6 elem1=0000000d elem2=00000066 elem3=f0000600 ready=1 t_cnt=161
+[QDISP_TB][cycle=172][QX] idx=31 op=QV.SINGLE    id=6 elem1=0000000f elem2=00000066 elem3=f0000600 ready=1 t_cnt=162
+[AWG][t_cnt=167] valid_mask=1010101010101010  (cycle=177)
+[AWG][t_cnt=167]   qubit[01]  gate=0x78
+[AWG][t_cnt=167]   qubit[03]  gate=0x78
+[AWG][t_cnt=167]   qubit[05]  gate=0x78
+[AWG][t_cnt=167]   qubit[07]  gate=0x78
+[AWG][t_cnt=167]   qubit[09]  gate=0x78
+[AWG][t_cnt=167]   qubit[11]  gate=0x78
+[AWG][t_cnt=167]   qubit[13]  gate=0x78
+[AWG][t_cnt=167]   qubit[15]  gate=0x78
+[QDISP_TB][cycle=372][DONE] 200 idle cycles after last event
+
+[QDISP_TB] ===== CO-SIM SUMMARY =====
+[QDISP_TB]  cycles         : 372
+[QDISP_TB]  quantum events : 32
+[QDISP_TB]  qubit fires    : 40
+[QDISP_TB]  FIFO errors    : 0
+[QDISP_TB]  RESULT         : PASS – no FIFO overflows
+[QDISP_TB] ==========================
+$finish called at time : 3715 ns : File "/home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_qdisp_bell_tb.v" Line 480
+exit
+INFO: [Common 17-206] Exiting xsim at Wed Apr 15 16:17:49 2026...

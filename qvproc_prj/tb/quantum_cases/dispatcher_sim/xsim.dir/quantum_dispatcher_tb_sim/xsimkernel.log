@@ -1,0 +1,7 @@
+Running: xsim.dir/quantum_dispatcher_tb_sim/xsimk -runall -simmode gui -wdb quantum_dispatcher_tb_sim.wdb -simrunnum 0 -socket 36663
+Design successfully loaded
+Design Loading Memory Usage: 182152 KB (Peak: 182152 KB)
+Design Loading CPU Usage: 590 ms
+Simulation completed
+Simulation Memory Usage: 256144 KB (Peak: 321420 KB)
+Simulation CPU Usage: 590 ms

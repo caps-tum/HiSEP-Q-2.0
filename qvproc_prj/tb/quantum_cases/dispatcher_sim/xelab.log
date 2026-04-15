@@ -1,0 +1,17 @@
+Vivado Simulator v2024.2.0
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: /tools/Xilinx/Vivado/2024.2/bin/unwrapped/lnx64.o/xelab -debug off quantum_dispatcher_tb -s quantum_dispatcher_tb_sim 
+Multi-threading is on. Using 14 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module work.inst_fifo(DEPTH=4,DATA_WIDTH=19)
+Compiling module work.time_controller(TIME_WIDTH=12,OP...
+Compiling module work.timed_fifo(FIFO_DEPTH=4,TIME_WID...
+Compiling module work.quantum_dispatcher(FIFO_DEPTH=4,...
+Compiling module work.quantum_dispatcher_tb
+Built simulation snapshot quantum_dispatcher_tb_sim

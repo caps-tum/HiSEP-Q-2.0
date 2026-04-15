@@ -1,0 +1,1 @@
+-debug "off" "quantum_dispatcher_tb" -s "quantum_dispatcher_tb_sim" 
