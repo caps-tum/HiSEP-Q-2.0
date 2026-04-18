@@ -1,0 +1,85 @@
+#-----------------------------------------------------------
+# xsim v2024.2 (64-bit)
+# SW Build 5239630 on Fri Nov 08 22:34:34 MST 2024
+# IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+# SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+# Start of session at: Fri Apr 17 17:03:33 2026
+# Process ID         : 447669
+# Current directory  : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim
+# Command line       : xsim -mode tcl -source {xsim.dir/vproc_qdisp_bell_tb_sim/xsim_script.tcl}
+# Log file           : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/xsim.log
+# Journal file       : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/xsim.jou
+# Running On         : xiaorang-MSI
+# Platform           : Ubuntu
+# Operating System   : Ubuntu 22.04.5 LTS
+# Processor Detail   : AMD Ryzen 7 7800X3D 8-Core Processor
+# CPU Frequency      : 5050.339 MHz
+# CPU Physical cores : 8
+# CPU Logical cores  : 16
+# Host memory        : 32757 MB
+# Swap memory        : 32767 MB
+# Total Virtual      : 65525 MB
+# Available Virtual  : 48079 MB
+#-----------------------------------------------------------
+source xsim.dir/vproc_qdisp_bell_tb_sim/xsim_script.tcl
+# xsim {vproc_qdisp_bell_tb_sim} -testplusarg INSTR_MEM_FILE=../instruction_bell_generic.mem -testplusarg DATA_MEM_FILE=../data_bell_generic.mem -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+[QDISP_TB][INIT] instruction mem : ../instruction_bell_generic.mem
+[QDISP_TB][INIT] data mem        : ../data_bell_generic.mem
+[QDISP_TB][INIT] Bell co-simulation started.
+[QDISP_TB][INIT] NUM_QUBITS=16  FIXED_LATENCY=16  TIME_WIDTH=20
+              140000: Illegal instruction (hart 0) at PC 0x00000080: 0x00010413
+[QDISP_TB][cycle=18][INSTR] 06600313  addi x6, x0, 0x66          
+[QDISP_TB][cycle=19][INSTR] 05500393  addi x7, x0, 0x55          
+[QDISP_TB][cycle=24][INSTR] 00000013  nop                        
+[QDISP_TB][cycle=25][INSTR] 00001537  lui a0, 0x1                
+[QDISP_TB][cycle=26][INSTR] 02050087  vle8.v v1, (a0)            
+[QDISP_TB][cycle=28][INSTR] 02058107  vle8.v v2, (a1)            
+[QDISP_TB][cycle=31][MEASURE] qvsg_meas=1 start
+[QDISP_TB][cycle=48][QX_START] op=16(QV.SINGLE   ) id=3 vd=12 elem2=00000055 elem3=c8000600 ready=1
+[QDISP_TB][cycle=48][QX] idx=0 op=QV.SINGLE    id=3 elem1=00000000 elem2=00000055 elem3=c8000600 ready=1 t_cnt=38
+[QDISP_TB][cycle=49][QX] idx=1 op=QV.SINGLE    id=3 elem1=00000002 elem2=00000055 elem3=c8000600 ready=1 t_cnt=39
+[QDISP_TB][cycle=50][QX] idx=2 op=QV.SINGLE    id=3 elem1=00000004 elem2=00000055 elem3=c8000600 ready=1 t_cnt=40
+[QDISP_TB][cycle=51][QX] idx=3 op=QV.SINGLE    id=3 elem1=00000006 elem2=00000055 elem3=c8000600 ready=1 t_cnt=41
+[AWG][t_cnt=50] valid_mask=0000000001010101  (cycle=60)
+[AWG][t_cnt=50]   qubit[00]  gate=0x64  role=CTRL
+[AWG][t_cnt=50]   qubit[02]  gate=0x64  role=CTRL
+[AWG][t_cnt=50]   qubit[04]  gate=0x64  role=CTRL
+[AWG][t_cnt=50]   qubit[06]  gate=0x64  role=CTRL
+[QDISP_TB][cycle=71][QX_START] op=17(QV.PAIR     ) id=4 vd=12 elem2=00000001 elem3=00000600 ready=1
+[QDISP_TB][cycle=71][QX] idx=4 op=QV.PAIR      id=4 elem1=00000000 elem2=00000001 elem3=00000600 ready=1 t_cnt=61
+[QDISP_TB][cycle=72][QX] idx=5 op=QV.PAIR      id=4 elem1=00000002 elem2=00000003 elem3=00000600 ready=1 t_cnt=62
+[QDISP_TB][cycle=73][QX] idx=6 op=QV.PAIR      id=4 elem1=00000004 elem2=00000005 elem3=00000600 ready=1 t_cnt=63
+[QDISP_TB][cycle=74][QX] idx=7 op=QV.PAIR      id=4 elem1=00000006 elem2=00000007 elem3=00000600 ready=1 t_cnt=64
+[AWG][t_cnt=73] valid_mask=0000000011111111  (cycle=83)
+[AWG][t_cnt=73]   qubit[00]  gate=0x00  role=CTRL
+[AWG][t_cnt=73]   qubit[01]  gate=0x00  role=TGT 
+[AWG][t_cnt=73]   qubit[02]  gate=0x00  role=CTRL
+[AWG][t_cnt=73]   qubit[03]  gate=0x00  role=TGT 
+[AWG][t_cnt=73]   qubit[04]  gate=0x00  role=CTRL
+[AWG][t_cnt=73]   qubit[05]  gate=0x00  role=TGT 
+[AWG][t_cnt=73]   qubit[06]  gate=0x00  role=CTRL
+[AWG][t_cnt=73]   qubit[07]  gate=0x00  role=TGT 
+[QDISP_TB][cycle=94][QX_START] op=16(QV.SINGLE   ) id=5 vd=12 elem2=00000055 elem3=d0000600 ready=1
+[QDISP_TB][cycle=94][QX] idx=8 op=QV.SINGLE    id=5 elem1=00000000 elem2=00000055 elem3=d0000600 ready=1 t_cnt=84
+[QDISP_TB][cycle=95][QX] idx=9 op=QV.SINGLE    id=5 elem1=00000002 elem2=00000055 elem3=d0000600 ready=1 t_cnt=85
+[QDISP_TB][cycle=96][QX] idx=10 op=QV.SINGLE    id=5 elem1=00000004 elem2=00000055 elem3=d0000600 ready=1 t_cnt=86
+[QDISP_TB][cycle=97][QX] idx=11 op=QV.SINGLE    id=5 elem1=00000006 elem2=00000055 elem3=d0000600 ready=1 t_cnt=87
+[AWG][t_cnt=96] valid_mask=0000000001010101  (cycle=106)
+[AWG][t_cnt=96]   qubit[00]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[02]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[04]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[06]  gate=0x68  role=CTRL
+[QDISP_TB][cycle=297][DONE] 200 idle cycles after last event
+
+[QDISP_TB] ===== CO-SIM SUMMARY =====
+[QDISP_TB]  cycles         : 297
+[QDISP_TB]  quantum events : 12
+[QDISP_TB]  qubit fires    : 16
+[QDISP_TB]  FIFO errors    : 0
+[QDISP_TB]  RESULT         : PASS – no FIFO overflows
+[QDISP_TB] ==========================
+$finish called at time : 2965 ns : File "/home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_qdisp_bell_tb.v" Line 483
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Apr 17 17:03:35 2026...

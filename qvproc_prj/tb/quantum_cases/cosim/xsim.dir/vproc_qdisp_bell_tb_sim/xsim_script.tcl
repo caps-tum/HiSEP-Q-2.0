@@ -1,1 +1,1 @@
-xsim {vproc_qdisp_bell_tb_sim} -testplusarg INSTR_MEM_FILE=/home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem -testplusarg DATA_MEM_FILE=/home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem -autoloadwcfg -runall
+xsim {vproc_qdisp_bell_tb_sim} -testplusarg INSTR_MEM_FILE=../bell_4pair_generic_machine_code.txt -testplusarg DATA_MEM_FILE=../data_bell_4pair.mem -autoloadwcfg -runall

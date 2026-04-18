@@ -3,8 +3,8 @@
 # SW Build 5239630 on Fri Nov 08 22:34:34 MST 2024
 # IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
 # SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
-# Start of session at: Wed Apr 15 16:18:38 2026
-# Process ID         : 238102
+# Start of session at: Fri Apr 17 16:51:02 2026
+# Process ID         : 443707
 # Current directory  : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim
 # Command line       : xsim -mode tcl -source {xsim.dir/vproc_qdisp_bell_tb_sim/xsim_script.tcl}
 # Log file           : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/xsim.log
@@ -13,13 +13,13 @@
 # Platform           : Ubuntu
 # Operating System   : Ubuntu 22.04.5 LTS
 # Processor Detail   : AMD Ryzen 7 7800X3D 8-Core Processor
-# CPU Frequency      : 5050.160 MHz
+# CPU Frequency      : 5049.573 MHz
 # CPU Physical cores : 8
 # CPU Logical cores  : 16
 # Host memory        : 32757 MB
 # Swap memory        : 32767 MB
 # Total Virtual      : 65525 MB
-# Available Virtual  : 50308 MB
+# Available Virtual  : 47958 MB
 #-----------------------------------------------------------
 source xsim.dir/vproc_qdisp_bell_tb_sim/xsim_script.tcl
 run -all

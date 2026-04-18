@@ -1,12 +1,26 @@
-
-****** xsim v2024.2 (64-bit)
-  **** SW Build 5239630 on Fri Nov 08 22:34:34 MST 2024
-  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
-  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
-  **** Start of session at: Wed Apr 15 16:18:38 2026
-    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
-    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
-
+#-----------------------------------------------------------
+# xsim v2024.2 (64-bit)
+# SW Build 5239630 on Fri Nov 08 22:34:34 MST 2024
+# IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+# SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+# Start of session at: Fri Apr 17 16:51:02 2026
+# Process ID         : 443707
+# Current directory  : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim
+# Command line       : xsim -mode tcl -source {xsim.dir/vproc_qdisp_bell_tb_sim/xsim_script.tcl}
+# Log file           : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/xsim.log
+# Journal file       : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/xsim.jou
+# Running On         : xiaorang-MSI
+# Platform           : Ubuntu
+# Operating System   : Ubuntu 22.04.5 LTS
+# Processor Detail   : AMD Ryzen 7 7800X3D 8-Core Processor
+# CPU Frequency      : 5049.573 MHz
+# CPU Physical cores : 8
+# CPU Logical cores  : 16
+# Host memory        : 32757 MB
+# Swap memory        : 32767 MB
+# Total Virtual      : 65525 MB
+# Available Virtual  : 47958 MB
+#-----------------------------------------------------------
 source xsim.dir/vproc_qdisp_bell_tb_sim/xsim_script.tcl
 # xsim {vproc_qdisp_bell_tb_sim} -testplusarg INSTR_MEM_FILE=/home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem -testplusarg DATA_MEM_FILE=/home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem -autoloadwcfg -runall
 Time resolution is 1 ps
@@ -36,14 +50,14 @@ run -all
 [QDISP_TB][cycle=54][QX] idx=6 op=QV.SINGLE    id=3 elem1=0000000c elem2=00000055 elem3=c8000600 ready=1 t_cnt=44
 [QDISP_TB][cycle=55][QX] idx=7 op=QV.SINGLE    id=3 elem1=0000000e elem2=00000055 elem3=c8000600 ready=1 t_cnt=45
 [AWG][t_cnt=50] valid_mask=0101010101010101  (cycle=60)
-[AWG][t_cnt=50]   qubit[00]  gate=0x64
-[AWG][t_cnt=50]   qubit[02]  gate=0x64
-[AWG][t_cnt=50]   qubit[04]  gate=0x64
-[AWG][t_cnt=50]   qubit[06]  gate=0x64
-[AWG][t_cnt=50]   qubit[08]  gate=0x64
-[AWG][t_cnt=50]   qubit[10]  gate=0x64
-[AWG][t_cnt=50]   qubit[12]  gate=0x64
-[AWG][t_cnt=50]   qubit[14]  gate=0x64
+[AWG][t_cnt=50]   qubit[00]  gate=0x64  role=CTRL
+[AWG][t_cnt=50]   qubit[02]  gate=0x64  role=CTRL
+[AWG][t_cnt=50]   qubit[04]  gate=0x64  role=CTRL
+[AWG][t_cnt=50]   qubit[06]  gate=0x64  role=CTRL
+[AWG][t_cnt=50]   qubit[08]  gate=0x64  role=CTRL
+[AWG][t_cnt=50]   qubit[10]  gate=0x64  role=CTRL
+[AWG][t_cnt=50]   qubit[12]  gate=0x64  role=CTRL
+[AWG][t_cnt=50]   qubit[14]  gate=0x64  role=CTRL
 [QDISP_TB][cycle=71][QX_START] op=17(QV.PAIR     ) id=4 vd=12 elem2=00000001 elem3=00000600 ready=1
 [QDISP_TB][cycle=71][QX] idx=8 op=QV.PAIR      id=4 elem1=00000000 elem2=00000001 elem3=00000600 ready=1 t_cnt=61
 [QDISP_TB][cycle=72][QX] idx=9 op=QV.PAIR      id=4 elem1=00000002 elem2=00000003 elem3=00000600 ready=1 t_cnt=62
@@ -54,22 +68,22 @@ run -all
 [QDISP_TB][cycle=77][QX] idx=14 op=QV.PAIR      id=4 elem1=0000000c elem2=0000000d elem3=00000600 ready=1 t_cnt=67
 [QDISP_TB][cycle=78][QX] idx=15 op=QV.PAIR      id=4 elem1=0000000e elem2=0000000f elem3=00000600 ready=1 t_cnt=68
 [AWG][t_cnt=73] valid_mask=1111111111111111  (cycle=83)
-[AWG][t_cnt=73]   qubit[00]  gate=0x00
-[AWG][t_cnt=73]   qubit[01]  gate=0x00
-[AWG][t_cnt=73]   qubit[02]  gate=0x00
-[AWG][t_cnt=73]   qubit[03]  gate=0x00
-[AWG][t_cnt=73]   qubit[04]  gate=0x00
-[AWG][t_cnt=73]   qubit[05]  gate=0x00
-[AWG][t_cnt=73]   qubit[06]  gate=0x00
-[AWG][t_cnt=73]   qubit[07]  gate=0x00
-[AWG][t_cnt=73]   qubit[08]  gate=0x00
-[AWG][t_cnt=73]   qubit[09]  gate=0x00
-[AWG][t_cnt=73]   qubit[10]  gate=0x00
-[AWG][t_cnt=73]   qubit[11]  gate=0x00
-[AWG][t_cnt=73]   qubit[12]  gate=0x00
-[AWG][t_cnt=73]   qubit[13]  gate=0x00
-[AWG][t_cnt=73]   qubit[14]  gate=0x00
-[AWG][t_cnt=73]   qubit[15]  gate=0x00
+[AWG][t_cnt=73]   qubit[00]  gate=0x00  role=CTRL
+[AWG][t_cnt=73]   qubit[01]  gate=0x00  role=TGT 
+[AWG][t_cnt=73]   qubit[02]  gate=0x00  role=CTRL
+[AWG][t_cnt=73]   qubit[03]  gate=0x00  role=TGT 
+[AWG][t_cnt=73]   qubit[04]  gate=0x00  role=CTRL
+[AWG][t_cnt=73]   qubit[05]  gate=0x00  role=TGT 
+[AWG][t_cnt=73]   qubit[06]  gate=0x00  role=CTRL
+[AWG][t_cnt=73]   qubit[07]  gate=0x00  role=TGT 
+[AWG][t_cnt=73]   qubit[08]  gate=0x00  role=CTRL
+[AWG][t_cnt=73]   qubit[09]  gate=0x00  role=TGT 
+[AWG][t_cnt=73]   qubit[10]  gate=0x00  role=CTRL
+[AWG][t_cnt=73]   qubit[11]  gate=0x00  role=TGT 
+[AWG][t_cnt=73]   qubit[12]  gate=0x00  role=CTRL
+[AWG][t_cnt=73]   qubit[13]  gate=0x00  role=TGT 
+[AWG][t_cnt=73]   qubit[14]  gate=0x00  role=CTRL
+[AWG][t_cnt=73]   qubit[15]  gate=0x00  role=TGT 
 [QDISP_TB][cycle=94][QX_START] op=16(QV.SINGLE   ) id=5 vd=12 elem2=00000055 elem3=d0000600 ready=1
 [QDISP_TB][cycle=94][QX] idx=16 op=QV.SINGLE    id=5 elem1=00000000 elem2=00000055 elem3=d0000600 ready=1 t_cnt=84
 [QDISP_TB][cycle=95][QX] idx=17 op=QV.SINGLE    id=5 elem1=00000002 elem2=00000055 elem3=d0000600 ready=1 t_cnt=85
@@ -82,14 +96,14 @@ run -all
 [QDISP_TB][cycle=102][MEASURE] measure_issued_done=1
 [QDISP_TB][cycle=102][WAIT] ADC delay = 50 cycles
 [AWG][t_cnt=96] valid_mask=0101010101010101  (cycle=106)
-[AWG][t_cnt=96]   qubit[00]  gate=0x68
-[AWG][t_cnt=96]   qubit[02]  gate=0x68
-[AWG][t_cnt=96]   qubit[04]  gate=0x68
-[AWG][t_cnt=96]   qubit[06]  gate=0x68
-[AWG][t_cnt=96]   qubit[08]  gate=0x68
-[AWG][t_cnt=96]   qubit[10]  gate=0x68
-[AWG][t_cnt=96]   qubit[12]  gate=0x68
-[AWG][t_cnt=96]   qubit[14]  gate=0x68
+[AWG][t_cnt=96]   qubit[00]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[02]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[04]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[06]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[08]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[10]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[12]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[14]  gate=0x68  role=CTRL
 [QDISP_TB][cycle=153][MEASURE] measure_done=1 (sent)
 [QDISP_TB][cycle=155][MEASURE] qvsg_meas=0 resume
 [QDISP_TB][cycle=157][INSTR] 0000006f  jal x0, 0                  
@@ -104,14 +118,14 @@ run -all
 [QDISP_TB][cycle=171][QX] idx=30 op=QV.SINGLE    id=6 elem1=0000000d elem2=00000066 elem3=f0000600 ready=1 t_cnt=161
 [QDISP_TB][cycle=172][QX] idx=31 op=QV.SINGLE    id=6 elem1=0000000f elem2=00000066 elem3=f0000600 ready=1 t_cnt=162
 [AWG][t_cnt=167] valid_mask=1010101010101010  (cycle=177)
-[AWG][t_cnt=167]   qubit[01]  gate=0x78
-[AWG][t_cnt=167]   qubit[03]  gate=0x78
-[AWG][t_cnt=167]   qubit[05]  gate=0x78
-[AWG][t_cnt=167]   qubit[07]  gate=0x78
-[AWG][t_cnt=167]   qubit[09]  gate=0x78
-[AWG][t_cnt=167]   qubit[11]  gate=0x78
-[AWG][t_cnt=167]   qubit[13]  gate=0x78
-[AWG][t_cnt=167]   qubit[15]  gate=0x78
+[AWG][t_cnt=167]   qubit[01]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[03]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[05]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[07]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[09]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[11]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[13]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[15]  gate=0x78  role=CTRL
 [QDISP_TB][cycle=372][DONE] 200 idle cycles after last event
 
 [QDISP_TB] ===== CO-SIM SUMMARY =====
@@ -121,6 +135,6 @@ run -all
 [QDISP_TB]  FIFO errors    : 0
 [QDISP_TB]  RESULT         : PASS – no FIFO overflows
 [QDISP_TB] ==========================
-$finish called at time : 3715 ns : File "/home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_qdisp_bell_tb.v" Line 480
+$finish called at time : 3715 ns : File "/home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_qdisp_bell_tb.v" Line 483
 exit
-INFO: [Common 17-206] Exiting xsim at Wed Apr 15 16:18:40 2026...
+INFO: [Common 17-206] Exiting xsim at Fri Apr 17 16:51:04 2026...

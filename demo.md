@@ -256,3 +256,12 @@ For single-qubit gates (QV.SINGLE), only elem1 qubits are written, so `qubit_ctr
 For QV.PAIR, even and odd qubits in each pair receive opposite role bits simultaneously, allowing the AWG to distinguish which physical line should apply the control pulse and which should receive the conditional flip.
 ### TODO:
 [] add conditional logics based on the measurement input, rightnow we only simulate the waiting time
+[] one bug:
+
+MEASURE Halt-Resume Does Not Complete
+
+With VL=4, the program is compact enough that Ibex issues all three quantum instructions — H, CX, and MEASURE — into vproc's queue within approximately 3 clock cycles. As a result, qvsg_meas asserts at cycle 31, roughly 63 cycles before the MEASURE element stream actually begins executing at cycle 94.
+
+The measure_issued_done pulse is expected to fire after vproc finishes streaming the MEASURE instruction's elem1 entries. However, because MEASURE was enqueued so far ahead of its actual execution, the internal state machine's timing is disrupted and measure_issued_done never asserts. Without measure_issued_done, the testbench never sends measure_done, the CPU remains halted indefinitely, and the simulation exits via the 200-cycle idle timeout rather than through the normal resume path.
+
+Root cause: The hardware measurement protocol assumes that the MEASURE instruction enters vproc's pipeline close to the time vproc is ready to execute it. The original Bell demo satisfies this constraint because VL=8 combined with several scalar instructions between quantum gates keeps Ibex from getting far ahead of vproc. With VL=4 and a per-batch program structure, Ibex races ahead and deep-queues MEASURE before vproc has finished executing the preceding gates, violating the implicit timing assumption of the halt-resume state machine.
