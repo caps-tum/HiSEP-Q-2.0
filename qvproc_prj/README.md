@@ -320,6 +320,6 @@ Because the angle operand is 4x wider than the target-index operand, `vs2` consu
 
 ## To-do
 
-- [ ] Review the remaining `QV.ROT.V` issues and record the preferred fix direction. This should cover the startup invalid-window behavior, the valid/ready indicator, and whether the final fix belongs in the trace/export path or in the operand-prefetch path.
+- [x] Review the remaining `QV.ROT.V` issues and record the preferred fix direction. This should cover the startup invalid-window behavior, the valid/ready indicator, and whether the final fix belongs in the trace/export path or in the operand-prefetch path.
 - [x] Revisit `QV.SINGLE` scalar-source conventions further if the `rs2`-based 32-bit payload should be reserved specifically for timestamps.
 - [x] Define and implement the `MEASURE`-gate interrupt flow for `QV.SINGLE`. The current behavior and interface are recorded in `docs/qsg_measure_spec.md`.
