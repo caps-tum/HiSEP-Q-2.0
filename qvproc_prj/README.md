@@ -305,7 +305,7 @@ Because the angle operand is 4x wider than the target-index operand, `vs2` consu
 - `m4` and `m8` on `vs1` would imply unsupported larger groups on `vs2`, so those cases should be rejected.
 - `QV.SINGLE` still has one open architectural question: the vector form may overlap conceptually with a VLIW-style gate form, so the final encoding and compiler lowering should keep gate identification explicit.
 - `Block_imm` is better treated as a scheduling field than a generic immediate. The code generator should have a clear policy for how this field is assigned.
-- `vsetvli` 需要跟一条 nop
+- `vsetvli` needs one nop
 
 ### Practical compiler policy
 
