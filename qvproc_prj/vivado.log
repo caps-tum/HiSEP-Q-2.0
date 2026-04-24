@@ -3,12 +3,12 @@
 # SW Build 5239630 on Fri Nov 08 22:34:34 MST 2024
 # IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
 # SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
-# Start of session at: Mon Mar 23 00:23:18 2026
-# Process ID         : 2326220
-# Current directory  : /u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj
+# Start of session at: Fri Apr 24 22:56:59 2026
+# Process ID         : 1584519
+# Current directory  : /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj
 # Command line       : vivado -mode batch -source tb/quantum_cases/run_quantum_case_batch.tcl
-# Log file           : /u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/vivado.log
-# Journal file       : /u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/vivado.jou
+# Log file           : /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/vivado.log
+# Journal file       : /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/vivado.jou
 # Running On         : i10se26
 # Platform           : Ubuntu
 # Operating System   : Ubuntu 24.04.4 LTS
@@ -16,10 +16,10 @@
 # CPU Frequency      : 1500.000 MHz
 # CPU Physical cores : 128
 # CPU Logical cores  : 256
-# Host memory        : 1216549 MB
+# Host memory        : 1216550 MB
 # Swap memory        : 8589 MB
-# Total Virtual      : 1225139 MB
-# Available Virtual  : 1124406 MB
+# Total Virtual      : 1225140 MB
+# Available Virtual  : 1195090 MB
 #-----------------------------------------------------------
 source tb/quantum_cases/run_quantum_case_batch.tcl
 # set script_dir [file normalize [file dirname [info script]]]
@@ -63,8 +63,7 @@ source tb/quantum_cases/run_quantum_case_batch.tcl
 # }
 # set tb_top "vproc_${quantum_case}_tb"
 # open_project $project_path
-INFO: [filemgmt 56-3] Default IP Output Path : Could not find the directory '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.gen/sources_1'.
-CRITICAL WARNING: [Project 1-19] Could not find the file '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/vproc_tb_predef.sv'.
+INFO: [filemgmt 56-3] Default IP Output Path : Could not find the directory '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.gen/sources_1'.
 Scanning sources...
 Finished scanning sources
 # set simset [get_filesets sim_1]
@@ -83,15 +82,15 @@ Finished scanning sources
 # puts "== Quantum batch simulation =="
 == Quantum batch simulation ==
 # puts [format "project : %s" $project_path]
-project : /u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.xpr
+project : /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.xpr
 # puts [format "case    : %s" $quantum_case]
 case    : bell
 # puts [format "top     : %s" $tb_top]
 top     : vproc_bell_tb
 # puts [format "instr   : %s" $instr_file]
-instr   : /u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem
+instr   : /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem
 # puts [format "data    : %s" $data_file]
-data    : /u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem
+data    : /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem
 # close_sim -quiet
 # reset_simulation
 INFO: [Vivado 12-2266] Removing simulation data...
@@ -104,156 +103,156 @@ INFO: [Vivado 12-2267] Reset complete
 # }
 Command: launch_simulation 
 INFO: [Vivado 12-12493] Simulation top is 'vproc_bell_tb'
-INFO: [Vivado 12-5682] Launching behavioral simulation in '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim'
+INFO: [Vivado 12-5682] Launching behavioral simulation in '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim'
 INFO: [SIM-utils-51] Simulation object is 'sim_1'
 INFO: [SIM-utils-72] Using boost library from '/opt/xilinx/vivado-2024.2/Vivado/2024.2/tps/boost_1_72_0'
 INFO: [SIM-utils-54] Inspecting design source files for 'vproc_bell_tb' in fileset 'sim_1'...
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qpr.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qpr.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qsg.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qsg.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qrv.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qrv.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qrg.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qrg.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_bell.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_bell.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qpr.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qpr.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qsg.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qsg.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qrv.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qrv.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qrg.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qrg.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_bell.mem'
-INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_bell.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qpr.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qpr.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qsg.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qsg.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qrv.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qrv.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qrg.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qrg.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_bell.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_bell.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qpr.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qpr.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qsg.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qsg.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qrv.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qrv.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_qrg.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_qrg.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/instruction_bell.mem'
+INFO: [SIM-utils-43] Exported '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/data_bell.mem'
 INFO: [USF-XSim-97] Finding global include files...
 INFO: [USF-XSim-98] Fetching design files from 'sim_1'...
 INFO: [USF-XSim-2] XSim::Compile design
-INFO: [USF-XSim-61] Executing 'COMPILE and ANALYZE' step in '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim'
+INFO: [USF-XSim-61] Executing 'COMPILE and ANALYZE' step in '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim'
 xvlog --incr --relax -L uvm -prj vproc_bell_tb_vlog.prj
-INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/syn/rtl/prim_clock_gating.v" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/syn/rtl/prim_clock_gating.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module prim_clock_gating
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_pkg.sv" into library xil_defaultlib
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_alu.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_pkg.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_alu.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_alu
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_branch_predict.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_branch_predict.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_branch_predict
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_compressed_decoder.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_compressed_decoder.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_compressed_decoder
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_controller.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_controller.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_controller
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_core.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_core.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_core
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_counter.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_counter.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_counter
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_cs_registers.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_cs_registers.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_cs_registers
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_csr.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_csr.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_csr
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_decoder.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_decoder.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_decoder
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_dummy_instr.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_dummy_instr.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_dummy_instr
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_ex_block.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_ex_block.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_ex_block
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_fetch_fifo.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_fetch_fifo.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_fetch_fifo
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_icache.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_icache.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_icache
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_id_stage.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_id_stage.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_id_stage
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_if_stage.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_if_stage.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_if_stage
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_load_store_unit.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_load_store_unit.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_load_store_unit
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_lockstep.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_lockstep.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_lockstep
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_multdiv_fast.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_multdiv_fast.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_multdiv_fast
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_multdiv_slow.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_multdiv_slow.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_multdiv_slow
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_pmp.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_pmp.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_pmp
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_prefetch_buffer.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_prefetch_buffer.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_prefetch_buffer
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_register_file_ff.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_register_file_ff.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_register_file_ff
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_register_file_fpga.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_register_file_fpga.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_register_file_fpga
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/ibex_register_file_latch.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/ibex_register_file_latch.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_register_file_latch
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/vendor/lowrisc_ip/ip/prim/rtl/prim_ram_1p_pkg.sv" into library xil_defaultlib
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_top.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/vendor/lowrisc_ip/ip/prim/rtl/prim_ram_1p_pkg.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_top.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_top
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_wb_stage.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/rtl/ibex_wb_stage.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module ibex_wb_stage
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/prim_buf.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/prim_buf.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module prim_buf
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/prim_generic_buf.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/prim_generic_buf.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module prim_generic_buf
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/prim_generic_ram_1p.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/prim_generic_ram_1p.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module prim_generic_ram_1p
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/core/ibex/prim_ram_1p.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/core/ibex/prim_ram_1p.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module prim_ram_1p
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_pkg.sv" into library xil_defaultlib
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_alu.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_pkg.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_alu.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_alu
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_cache.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_cache.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_cache
 INFO: [VRFC 10-311] analyzing module vproc_cache_way
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/configs/vproc_config_dual_128_32.sv" into library xil_defaultlib
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/configs/vproc_config_dual_128_32.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_core
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_decoder.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_decoder.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_decoder
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_dispatcher.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_dispatcher.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_dispatcher
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_elem.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_elem.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_elem
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_lsu.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_lsu.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_lsu
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_mul.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_mul.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_mul
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_mul_block.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_mul_block.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_mul_block
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_pending_wr.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_pending_wr.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_pending_wr
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_pipeline.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_pipeline.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_pipeline
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_pipeline_wrapper.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_pipeline_wrapper.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_pipeline_wrapper
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_queue.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_queue.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_queue
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_result.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_result.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_result
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_sld.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_sld.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_sld
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_top.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_top.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_top
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_unit_mux.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_unit_mux.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_unit_mux
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_unit_wrapper.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_unit_wrapper.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_unit_wrapper
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_vreg_wr_mux.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_vreg_wr_mux.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_vreg_wr_mux
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_vregfile.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_vregfile.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_vregfile
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_vregpack.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_vregpack.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_vregpack
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_vregunpack.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_vregunpack.sv" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_vregunpack
-INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_xif.sv" into library xil_defaultlib
-INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_xif.sv" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_bell_tb
-INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/glbl.v" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/glbl.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module glbl
 Waiting for jobs to finish...
 No pending jobs, compilation finished.
 INFO: [USF-XSim-69] 'compile' step finished in '2' seconds
 INFO: [USF-XSim-3] XSim::Elaborate design
-INFO: [USF-XSim-61] Executing 'ELABORATE' step in '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim'
+INFO: [USF-XSim-61] Executing 'ELABORATE' step in '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim'
 xelab --incr --debug typical --relax --mt 8 -L xil_defaultlib -L uvm -L unisims_ver -L unimacro_ver -L secureip --snapshot vproc_bell_tb_behav xil_defaultlib.vproc_bell_tb xil_defaultlib.glbl -log elaborate.log
 Vivado Simulator v2024.2.0
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
@@ -262,23 +261,23 @@ Running: /opt/xilinx/vivado-2024.2/Vivado/2024.2/bin/unwrapped/lnx64.o/xelab --i
 Using 8 slave threads.
 Starting static elaboration
 Pass Through NonSizing Optimizer
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v:137]
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v:138]
-WARNING: [VRFC 10-9466] unpacked array widths (2 versus 1) do not match [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:1009]
-WARNING: [VRFC 10-9466] unpacked array widths (2 versus 1) do not match [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:1010]
-WARNING: [VRFC 10-3823] variable 'quantum_lmul' might have multiple concurrent drivers [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_unit_mux.sv:223]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v:137]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v:138]
+WARNING: [VRFC 10-9466] unpacked array widths (2 versus 1) do not match [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:1010]
+WARNING: [VRFC 10-9466] unpacked array widths (2 versus 1) do not match [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:1011]
+WARNING: [VRFC 10-3823] variable 'quantum_lmul' might have multiple concurrent drivers [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_unit_mux.sv:224]
 Completed static elaboration
 Starting simulation data flow analysis
-WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v" Line 3. Module vproc_bell_tb has a timescale but at least one module in design doesn't have timescale.
-WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v" Line 3. Module vproc_bell_tb has a timescale but at least one module in design doesn't have timescale.
-WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/glbl.v" Line 6. Module glbl has a timescale but at least one module in design doesn't have timescale.
-WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/glbl.v" Line 6. Module glbl has a timescale but at least one module in design doesn't have timescale.
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:559]
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_unit_mux.sv:337]
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:359]
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:360]
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:361]
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:365]
+WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v" Line 3. Module vproc_bell_tb has a timescale but at least one module in design doesn't have timescale.
+WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v" Line 3. Module vproc_bell_tb has a timescale but at least one module in design doesn't have timescale.
+WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/glbl.v" Line 6. Module glbl has a timescale but at least one module in design doesn't have timescale.
+WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/glbl.v" Line 6. Module glbl has a timescale but at least one module in design doesn't have timescale.
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:560]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_unit_mux.sv:338]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:360]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:361]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:362]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:366]
 Completed simulation data flow analysis
 Time Resolution for simulation is 1ps
 Compiling package xil_defaultlib.vproc_pkg
@@ -345,12 +344,12 @@ Compiling module xil_defaultlib.vproc_top(MEM_W=32'b0100000,VMEM...
 Compiling module xil_defaultlib.vproc_bell_tb
 Compiling module xil_defaultlib.glbl
 Built simulation snapshot vproc_bell_tb_behav
-execute_script: Time (s): cpu = 00:00:21 ; elapsed = 00:00:08 . Memory (MB): peak = 1527.590 ; gain = 0.000 ; free physical = 796755 ; free virtual = 1071590
-INFO: [USF-XSim-69] 'elaborate' step finished in '8' seconds
+execute_script: Time (s): cpu = 00:00:21 ; elapsed = 00:00:10 . Memory (MB): peak = 1532.289 ; gain = 0.000 ; free physical = 1108639 ; free virtual = 1139075
+INFO: [USF-XSim-69] 'elaborate' step finished in '10' seconds
 INFO: [USF-XSim-4] XSim::Simulate design
-INFO: [USF-XSim-61] Executing 'SIMULATE' step in '/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim'
+INFO: [USF-XSim-61] Executing 'SIMULATE' step in '/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim'
 INFO: [USF-XSim-98] *** Running xsim
-   with args "vproc_bell_tb_behav -key {Behavioral:sim_1:Functional:vproc_bell_tb} -tclbatch {vproc_bell_tb.tcl} -log {simulate.log} -testplusarg INSTR_MEM_FILE=/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem -testplusarg DATA_MEM_FILE=/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem"
+   with args "vproc_bell_tb_behav -key {Behavioral:sim_1:Functional:vproc_bell_tb} -tclbatch {vproc_bell_tb.tcl} -log {simulate.log} -testplusarg INSTR_MEM_FILE=/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem -testplusarg DATA_MEM_FILE=/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem"
 INFO: [USF-XSim-8] Loading simulator feature
 Time resolution is 1 ps
 source vproc_bell_tb.tcl
@@ -365,8 +364,8 @@ source vproc_bell_tb.tcl
 ## }
 WARNING: [Wavedata 42-489] Can't add object "/vproc_bell_tb/mem" to the wave window because it has 2097152 bits, which exceeds the display limit of 65536 bits.  To change the display limit, use the command "set_property display_limit <new limit> [current_wave_config]".
 ## run 1000ns
-[BELL][cycle=0][INIT] instruction=                                               /u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem
-[BELL][cycle=0][INIT] data=                                                      /u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem
+[BELL][cycle=0][INIT] instruction=                                /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem
+[BELL][cycle=0][INIT] data=                                       /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem
 [BELL][cycle=0][INIT] Bell program with measure halt-resume.
               140000: Illegal instruction (hart 0) at PC 0x00000080: 0x00010413
 [BELL][cycle=18][INSTR] 06600313 (addi x6, x0, 0x66          )
@@ -378,39 +377,36 @@ WARNING: [Wavedata 42-489] Can't add object "/vproc_bell_tb/mem" to the wave win
 [BELL][cycle=26][INSTR] 02050087 (vle8.v v1, (a0)            )
 [BELL][cycle=27][INSTR] 00850593 (addi a1, a0, 8             )
 [BELL][cycle=28][INSTR] 02058107 (vle8.v v2, (a1)            )
-[BELL][cycle=29][INSTR] c87081d7 (QV.SINGLE(H) vd3, v1, x7   )
-[BELL][cycle=30][INSTR] cc2081d7 (QV.PAIR(CNOT) vd3, v1, v2  )
-[BELL][cycle=31][INSTR] d07081d7 (QSG.MEASURE vd3, v1, x7    )
-[BELL][cycle=31][MEASURE] qvsg_meas=1 start d07081d7 (QSG.MEASURE vd3, v1, x7    )
-[BELL][cycle=48][QX] stream start: op=16(QV.SINGLE   ) id=3 vd=3 elem2=00000055 elem3=c8000180 ready=1
-[BELL] 48: idx=0 op=16(QV.SINGLE   ) id=3 vd=3 elem1=00000000 elem2=00000055 elem3=c8000180 ready=1
-[BELL] 49: idx=1 op=16(QV.SINGLE   ) id=3 vd=3 elem1=00000002 elem2=00000055 elem3=c8000180 ready=1
-[BELL] 50: idx=2 op=16(QV.SINGLE   ) id=3 vd=3 elem1=00000004 elem2=00000055 elem3=c8000180 ready=1
-[BELL] 51: idx=3 op=16(QV.SINGLE   ) id=3 vd=3 elem1=00000006 elem2=00000055 elem3=c8000180 ready=1
-[BELL] 52: idx=4 op=16(QV.SINGLE   ) id=3 vd=3 elem1=00000008 elem2=00000055 elem3=c8000180 ready=1
-[BELL] 53: idx=5 op=16(QV.SINGLE   ) id=3 vd=3 elem1=0000000a elem2=00000055 elem3=c8000180 ready=1
-[BELL] 54: idx=6 op=16(QV.SINGLE   ) id=3 vd=3 elem1=0000000c elem2=00000055 elem3=c8000180 ready=1
-[BELL] 55: idx=7 op=16(QV.SINGLE   ) id=3 vd=3 elem1=0000000e elem2=00000055 elem3=c8000180 ready=1
-[BELL][cycle=71][QX] stream start: op=17(QV.PAIR     ) id=4 vd=3 elem2=00000001 elem3=00000180 ready=1
-[BELL] 71: idx=8 op=17(QV.PAIR     ) id=4 vd=3 elem1=00000000 elem2=00000001 elem3=00000180 ready=1
-[BELL] 72: idx=9 op=17(QV.PAIR     ) id=4 vd=3 elem1=00000002 elem2=00000003 elem3=00000180 ready=1
-[BELL] 73: idx=10 op=17(QV.PAIR     ) id=4 vd=3 elem1=00000004 elem2=00000005 elem3=00000180 ready=1
-[BELL] 74: idx=11 op=17(QV.PAIR     ) id=4 vd=3 elem1=00000006 elem2=00000007 elem3=00000180 ready=1
-[BELL] 75: idx=12 op=17(QV.PAIR     ) id=4 vd=3 elem1=00000008 elem2=00000009 elem3=00000180 ready=1
-[BELL] 76: idx=13 op=17(QV.PAIR     ) id=4 vd=3 elem1=0000000a elem2=0000000b elem3=00000180 ready=1
-[BELL] 77: idx=14 op=17(QV.PAIR     ) id=4 vd=3 elem1=0000000c elem2=0000000d elem3=00000180 ready=1
-[BELL] 78: idx=15 op=17(QV.PAIR     ) id=4 vd=3 elem1=0000000e elem2=0000000f elem3=00000180 ready=1
-[BELL][cycle=94][QX] stream start: op=16(QV.SINGLE   ) id=5 vd=3 elem2=00000055 elem3=d0000180 ready=1
-[BELL] 94: idx=16 op=16(QV.SINGLE   ) id=5 vd=3 elem1=00000000 elem2=00000055 elem3=d0000180 ready=1
-[BELL] 95: idx=17 op=16(QV.SINGLE   ) id=5 vd=3 elem1=00000002 elem2=00000055 elem3=d0000180 ready=1
-[BELL] 96: idx=18 op=16(QV.SINGLE   ) id=5 vd=3 elem1=00000004 elem2=00000055 elem3=d0000180 ready=1
-[BELL] 97: idx=19 op=16(QV.SINGLE   ) id=5 vd=3 elem1=00000006 elem2=00000055 elem3=d0000180 ready=1
-[BELL] 98: idx=20 op=16(QV.SINGLE   ) id=5 vd=3 elem1=00000008 elem2=00000055 elem3=d0000180 ready=1
-[BELL] 99: idx=21 op=16(QV.SINGLE   ) id=5 vd=3 elem1=0000000a elem2=00000055 elem3=d0000180 ready=1
-[BELL] 100: idx=22 op=16(QV.SINGLE   ) id=5 vd=3 elem1=0000000c elem2=00000055 elem3=d0000180 ready=1
+[BELL][cycle=31][MEASURE] qvsg_meas=1 start d0708657 (unknown                    )
+[BELL][cycle=48][QX] stream start: op=16(QV.SINGLE   ) id=3 vd=12 elem2=00000055 elem3=c8000600 ready=1
+[BELL] 48: idx=0 op=16(QV.SINGLE   ) id=3 vd=12 elem1=00000000 elem2=00000055 elem3=c8000600 ready=1
+[BELL] 49: idx=1 op=16(QV.SINGLE   ) id=3 vd=12 elem1=00000002 elem2=00000055 elem3=c8000600 ready=1
+[BELL] 50: idx=2 op=16(QV.SINGLE   ) id=3 vd=12 elem1=00000004 elem2=00000055 elem3=c8000600 ready=1
+[BELL] 51: idx=3 op=16(QV.SINGLE   ) id=3 vd=12 elem1=00000006 elem2=00000055 elem3=c8000600 ready=1
+[BELL] 52: idx=4 op=16(QV.SINGLE   ) id=3 vd=12 elem1=00000008 elem2=00000055 elem3=c8000600 ready=1
+[BELL] 53: idx=5 op=16(QV.SINGLE   ) id=3 vd=12 elem1=0000000a elem2=00000055 elem3=c8000600 ready=1
+[BELL] 54: idx=6 op=16(QV.SINGLE   ) id=3 vd=12 elem1=0000000c elem2=00000055 elem3=c8000600 ready=1
+[BELL] 55: idx=7 op=16(QV.SINGLE   ) id=3 vd=12 elem1=0000000e elem2=00000055 elem3=c8000600 ready=1
+[BELL][cycle=71][QX] stream start: op=17(QV.PAIR     ) id=4 vd=12 elem2=00000001 elem3=00000600 ready=1
+[BELL] 71: idx=8 op=17(QV.PAIR     ) id=4 vd=12 elem1=00000000 elem2=00000001 elem3=00000600 ready=1
+[BELL] 72: idx=9 op=17(QV.PAIR     ) id=4 vd=12 elem1=00000002 elem2=00000003 elem3=00000600 ready=1
+[BELL] 73: idx=10 op=17(QV.PAIR     ) id=4 vd=12 elem1=00000004 elem2=00000005 elem3=00000600 ready=1
+[BELL] 74: idx=11 op=17(QV.PAIR     ) id=4 vd=12 elem1=00000006 elem2=00000007 elem3=00000600 ready=1
+[BELL] 75: idx=12 op=17(QV.PAIR     ) id=4 vd=12 elem1=00000008 elem2=00000009 elem3=00000600 ready=1
+[BELL] 76: idx=13 op=17(QV.PAIR     ) id=4 vd=12 elem1=0000000a elem2=0000000b elem3=00000600 ready=1
+[BELL] 77: idx=14 op=17(QV.PAIR     ) id=4 vd=12 elem1=0000000c elem2=0000000d elem3=00000600 ready=1
+[BELL] 78: idx=15 op=17(QV.PAIR     ) id=4 vd=12 elem1=0000000e elem2=0000000f elem3=00000600 ready=1
+[BELL][cycle=94][QX] stream start: op=16(QV.SINGLE   ) id=5 vd=12 elem2=00000055 elem3=d0000600 ready=1
+[BELL] 94: idx=16 op=16(QV.SINGLE   ) id=5 vd=12 elem1=00000000 elem2=00000055 elem3=d0000600 ready=1
+[BELL] 95: idx=17 op=16(QV.SINGLE   ) id=5 vd=12 elem1=00000002 elem2=00000055 elem3=d0000600 ready=1
+[BELL] 96: idx=18 op=16(QV.SINGLE   ) id=5 vd=12 elem1=00000004 elem2=00000055 elem3=d0000600 ready=1
+[BELL] 97: idx=19 op=16(QV.SINGLE   ) id=5 vd=12 elem1=00000006 elem2=00000055 elem3=d0000600 ready=1
+[BELL] 98: idx=20 op=16(QV.SINGLE   ) id=5 vd=12 elem1=00000008 elem2=00000055 elem3=d0000600 ready=1
+[BELL] 99: idx=21 op=16(QV.SINGLE   ) id=5 vd=12 elem1=0000000a elem2=00000055 elem3=d0000600 ready=1
+[BELL] 100: idx=22 op=16(QV.SINGLE   ) id=5 vd=12 elem1=0000000c elem2=00000055 elem3=d0000600 ready=1
 INFO: [USF-XSim-96] XSim completed. Design snapshot 'vproc_bell_tb_behav' loaded.
 INFO: [USF-XSim-97] XSim simulation ran for 1000ns
-launch_simulation: Time (s): cpu = 00:00:24 ; elapsed = 00:00:15 . Memory (MB): peak = 1527.590 ; gain = 0.000 ; free physical = 796738 ; free virtual = 1071577
+launch_simulation: Time (s): cpu = 00:00:25 ; elapsed = 00:00:19 . Memory (MB): peak = 1532.289 ; gain = 5.477 ; free physical = 1108660 ; free virtual = 1139098
 # if {[catch {run all} run_err]} {
 #   puts "ERROR: run all failed"
 #   puts $run_err
@@ -418,30 +414,29 @@ launch_simulation: Time (s): cpu = 00:00:24 ; elapsed = 00:00:15 . Memory (MB): 
 #   close_project
 #   exit 1
 # }
-[BELL] 101: idx=23 op=16(QV.SINGLE   ) id=5 vd=3 elem1=0000000e elem2=00000055 elem3=d0000180 ready=1
+[BELL] 101: idx=23 op=16(QV.SINGLE   ) id=5 vd=12 elem1=0000000e elem2=00000055 elem3=d0000600 ready=1
 [BELL][cycle=102][MEASURE] measure_issued_done=1
 [BELL][cycle=102][WAIT] Waiting for external ADC (50 cycles).
 [BELL][cycle=153][MEASURE] measure_done=1
 [BELL][cycle=155][MEASURE] qvsg_meas=0 resume
-[BELL][cycle=156][INSTR] f0610357 (QV.SINGLE(resume) vd6, v2,x6)
 [BELL][cycle=157][INSTR] 0000006f (jal x0, 0                  )
-[BELL][cycle=165][QX] stream start: op=16(QV.SINGLE   ) id=6 vd=6 elem2=00000066 elem3=f0000300 ready=1
-[BELL] 165: idx=24 op=16(QV.SINGLE   ) id=6 vd=6 elem1=00000001 elem2=00000066 elem3=f0000300 ready=1
+[BELL][cycle=165][QX] stream start: op=16(QV.SINGLE   ) id=6 vd=12 elem2=00000066 elem3=f0000600 ready=1
+[BELL] 165: idx=24 op=16(QV.SINGLE   ) id=6 vd=12 elem1=00000001 elem2=00000066 elem3=f0000600 ready=1
 [BELL][cycle=165][RESUME] observed the first post-measure resume-marker event.
-[BELL] 166: idx=25 op=16(QV.SINGLE   ) id=6 vd=6 elem1=00000003 elem2=00000066 elem3=f0000300 ready=1
-[BELL] 167: idx=26 op=16(QV.SINGLE   ) id=6 vd=6 elem1=00000005 elem2=00000066 elem3=f0000300 ready=1
-[BELL] 168: idx=27 op=16(QV.SINGLE   ) id=6 vd=6 elem1=00000007 elem2=00000066 elem3=f0000300 ready=1
-[BELL] 169: idx=28 op=16(QV.SINGLE   ) id=6 vd=6 elem1=00000009 elem2=00000066 elem3=f0000300 ready=1
-[BELL] 170: idx=29 op=16(QV.SINGLE   ) id=6 vd=6 elem1=0000000b elem2=00000066 elem3=f0000300 ready=1
-[BELL] 171: idx=30 op=16(QV.SINGLE   ) id=6 vd=6 elem1=0000000d elem2=00000066 elem3=f0000300 ready=1
-[BELL] 172: idx=31 op=16(QV.SINGLE   ) id=6 vd=6 elem1=0000000f elem2=00000066 elem3=f0000300 ready=1
+[BELL] 166: idx=25 op=16(QV.SINGLE   ) id=6 vd=12 elem1=00000003 elem2=00000066 elem3=f0000600 ready=1
+[BELL] 167: idx=26 op=16(QV.SINGLE   ) id=6 vd=12 elem1=00000005 elem2=00000066 elem3=f0000600 ready=1
+[BELL] 168: idx=27 op=16(QV.SINGLE   ) id=6 vd=12 elem1=00000007 elem2=00000066 elem3=f0000600 ready=1
+[BELL] 169: idx=28 op=16(QV.SINGLE   ) id=6 vd=12 elem1=00000009 elem2=00000066 elem3=f0000600 ready=1
+[BELL] 170: idx=29 op=16(QV.SINGLE   ) id=6 vd=12 elem1=0000000b elem2=00000066 elem3=f0000600 ready=1
+[BELL] 171: idx=30 op=16(QV.SINGLE   ) id=6 vd=12 elem1=0000000d elem2=00000066 elem3=f0000600 ready=1
+[BELL] 172: idx=31 op=16(QV.SINGLE   ) id=6 vd=12 elem1=0000000f elem2=00000066 elem3=f0000600 ready=1
 [BELL][cycle=372][DONE] no new quantum events for 200 cycles after the last event.
 [BELL][cycle=372][SUMMARY] observed 32 quantum events.
 [BELL][cycle=372][SUMMARY] last quantum event arrived at cycle 172.
 [BELL][cycle=372][SUMMARY] use the transcript to inspect the Bell-state flow and the measure halt-resume handshake.
-$finish called at time : 3715 ns : File "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v" Line 355
+$finish called at time : 3715 ns : File "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v" Line 355
 # close_sim
 INFO: [Simtcl 6-16] Simulation closed
 # close_project
 # exit
-INFO: [Common 17-206] Exiting Vivado at Mon Mar 23 00:23:44 2026...
+INFO: [Common 17-206] Exiting Vivado at Fri Apr 24 22:57:29 2026...

@@ -20,6 +20,12 @@ cd qvproc_prj
 vivado -mode batch -source rebuild_project.tcl
 ```
 
+Or from the repository root of a fresh clone:
+
+```bash
+vivado -mode batch -source qvproc_prj/rebuild_project.tcl
+```
+
 This recreates the project at:
 
 ```text
@@ -31,7 +37,9 @@ Project settings restored by the Tcl:
 - Part: `xcu55c-fsvh2892-2L-e`
 - Board part: `xilinx.com:au55c:part0:1.0`
 - Design top: `vproc_top`
-- Simulation top: `vproc_qrv_mf2_direct_tb`
+- Simulation top: `vproc_qrv_tb` (full QRV LMUL sweep)
+
+The MF2-direct QRV bench is still available under `tb/quantum_cases/qrv_mf2_direct` for debug-only use.
 
 ## Run the quantum test cases
 

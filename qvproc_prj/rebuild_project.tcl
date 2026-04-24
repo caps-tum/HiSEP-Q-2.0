@@ -1,6 +1,13 @@
-set bundle_root [file normalize [file dirname [info script]]]
+set script_path [file normalize [info script]]
+set bundle_root [file dirname $script_path]
+
+if {[info exists ::env(QVPROC_BUNDLE_ROOT)] && ($::env(QVPROC_BUNDLE_ROOT) ne "")} {
+    set bundle_root [file normalize $::env(QVPROC_BUNDLE_ROOT)]
+}
+
 set project_name qvproc
-set project_dir [file join $bundle_root build $project_name]
+set project_dir [file normalize [file join $bundle_root build $project_name]]
+file mkdir $project_dir
 
 proc resolve_bundle_paths {bundle_root rel_files} {
     set resolved {}
@@ -98,7 +105,6 @@ set sim_rel_files [list \
   tb/quantum_cases/vproc_qrv_tb.v \
   tb/quantum_cases/vproc_qsg_tb.v \
   tb/quantum_cases/vproc_qpr_tb.v \
-  tb/vproc_tb_predef.sv \
   tb/quantum_cases/instruction_qpr.mem \
   tb/quantum_cases/data_qpr.mem \
   tb/quantum_cases/instruction_qsg.mem \
@@ -120,7 +126,7 @@ add_files -fileset sources_1 [resolve_bundle_paths $bundle_root $design_rel_file
 add_files -fileset sim_1     [resolve_bundle_paths $bundle_root $sim_rel_files]
 
 set_property top vproc_top [get_filesets sources_1]
-set_property top vproc_qrv_mf2_direct_tb [get_filesets sim_1]
+set_property top vproc_qrv_tb [get_filesets sim_1]
 set_property top_lib xil_defaultlib [get_filesets sim_1]
 
 update_compile_order -fileset sources_1

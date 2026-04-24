@@ -1,32 +1,18 @@
-#-----------------------------------------------------------
-# xsim v2024.2 (64-bit)
-# SW Build 5239630 on Fri Nov 08 22:34:34 MST 2024
-# IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
-# SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
-# Start of session at: Fri Apr 17 16:51:02 2026
-# Process ID         : 443707
-# Current directory  : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim
-# Command line       : xsim -mode tcl -source {xsim.dir/vproc_qdisp_bell_tb_sim/xsim_script.tcl}
-# Log file           : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/xsim.log
-# Journal file       : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/xsim.jou
-# Running On         : xiaorang-MSI
-# Platform           : Ubuntu
-# Operating System   : Ubuntu 22.04.5 LTS
-# Processor Detail   : AMD Ryzen 7 7800X3D 8-Core Processor
-# CPU Frequency      : 5049.573 MHz
-# CPU Physical cores : 8
-# CPU Logical cores  : 16
-# Host memory        : 32757 MB
-# Swap memory        : 32767 MB
-# Total Virtual      : 65525 MB
-# Available Virtual  : 47958 MB
-#-----------------------------------------------------------
+
+****** xsim v2024.2 (64-bit)
+  **** SW Build 5239630 on Fri Nov 08 22:34:34 MST 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Fri Apr 24 23:08:09 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
 source xsim.dir/vproc_qdisp_bell_tb_sim/xsim_script.tcl
-# xsim {vproc_qdisp_bell_tb_sim} -testplusarg INSTR_MEM_FILE=/home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem -testplusarg DATA_MEM_FILE=/home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem -autoloadwcfg -runall
+# xsim {vproc_qdisp_bell_tb_sim} -testplusarg INSTR_MEM_FILE=/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem -testplusarg DATA_MEM_FILE=/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem -autoloadwcfg -runall
 Time resolution is 1 ps
 run -all
-[QDISP_TB][INIT] instruction mem : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem
-[QDISP_TB][INIT] data mem        : /home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem
+[QDISP_TB][INIT] instruction mem : /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem
+[QDISP_TB][INIT] data mem        : /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem
 [QDISP_TB][INIT] Bell co-simulation started.
 [QDISP_TB][INIT] NUM_QUBITS=16  FIXED_LATENCY=16  TIME_WIDTH=20
               140000: Illegal instruction (hart 0) at PC 0x00000080: 0x00010413
@@ -39,6 +25,9 @@ run -all
 [QDISP_TB][cycle=26][INSTR] 02050087  vle8.v v1, (a0)            
 [QDISP_TB][cycle=27][INSTR] 00850593  addi a1, a0, 8             
 [QDISP_TB][cycle=28][INSTR] 02058107  vle8.v v2, (a1)            
+[QDISP_TB][cycle=29][INSTR] c8708657  QV.SINGLE(H) vd3, v1, x7   
+[QDISP_TB][cycle=30][INSTR] cc208657  QV.PAIR(CNOT) vd3, v1, v2  
+[QDISP_TB][cycle=31][INSTR] d0708657  QSG.MEASURE vd3, v1, x7    
 [QDISP_TB][cycle=31][MEASURE] qvsg_meas=1 start
 [QDISP_TB][cycle=48][QX_START] op=16(QV.SINGLE   ) id=3 vd=12 elem2=00000055 elem3=c8000600 ready=1
 [QDISP_TB][cycle=48][QX] idx=0 op=QV.SINGLE    id=3 elem1=00000000 elem2=00000055 elem3=c8000600 ready=1 t_cnt=38
@@ -106,6 +95,7 @@ run -all
 [AWG][t_cnt=96]   qubit[14]  gate=0x68  role=CTRL
 [QDISP_TB][cycle=153][MEASURE] measure_done=1 (sent)
 [QDISP_TB][cycle=155][MEASURE] qvsg_meas=0 resume
+[QDISP_TB][cycle=156][INSTR] f0610657  V.SINGLE(resume) vd6, v2, x6
 [QDISP_TB][cycle=157][INSTR] 0000006f  jal x0, 0                  
 [QDISP_TB][cycle=165][QX_START] op=16(QV.SINGLE   ) id=6 vd=12 elem2=00000066 elem3=f0000600 ready=1
 [QDISP_TB][cycle=165][QX] idx=24 op=QV.SINGLE    id=6 elem1=00000001 elem2=00000066 elem3=f0000600 ready=1 t_cnt=155
@@ -135,6 +125,6 @@ run -all
 [QDISP_TB]  FIFO errors    : 0
 [QDISP_TB]  RESULT         : PASS – no FIFO overflows
 [QDISP_TB] ==========================
-$finish called at time : 3715 ns : File "/home/xiaorang/Documents/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_qdisp_bell_tb.v" Line 483
+$finish called at time : 3715 ns : File "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_qdisp_bell_tb.v" Line 483
 exit
-INFO: [Common 17-206] Exiting xsim at Fri Apr 17 16:51:04 2026...
+INFO: [Common 17-206] Exiting xsim at Fri Apr 24 23:08:12 2026...

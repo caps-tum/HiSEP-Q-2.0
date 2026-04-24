@@ -86,10 +86,10 @@ module vproc_qdisp_bell_tb;
                 32'h02050087: bell_instr_name = "vle8.v v1, (a0)            ";
                 32'h00850593: bell_instr_name = "addi a1, a0, 8             ";
                 32'h02058107: bell_instr_name = "vle8.v v2, (a1)            ";
-                32'hC87081D7: bell_instr_name = "QV.SINGLE(H) vd3, v1, x7   ";
-                32'hCC2081D7: bell_instr_name = "QV.PAIR(CNOT) vd3, v1, v2  ";
-                32'hD07081D7: bell_instr_name = "QSG.MEASURE vd3, v1, x7    ";
-                32'hF0610357: bell_instr_name = "QV.SINGLE(resume) vd6,v2,x6";
+                32'hC8708657: bell_instr_name = "QV.SINGLE(H) vd3, v1, x7   ";
+                32'hCC208657: bell_instr_name = "QV.PAIR(CNOT) vd3, v1, v2  ";
+                32'hD0708657: bell_instr_name = "QSG.MEASURE vd3, v1, x7    ";
+                32'hF0610657: bell_instr_name = "QV.SINGLE(resume) vd6, v2, x6";
                 32'h0000006F: bell_instr_name = "jal x0, 0                  ";
                 default:      bell_instr_name = "unknown                    ";
             endcase

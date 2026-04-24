@@ -5,23 +5,23 @@ Running: /opt/xilinx/vivado-2024.2/Vivado/2024.2/bin/unwrapped/lnx64.o/xelab --i
 Using 8 slave threads.
 Starting static elaboration
 Pass Through NonSizing Optimizer
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v:137]
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v:138]
-WARNING: [VRFC 10-9466] unpacked array widths (2 versus 1) do not match [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:1009]
-WARNING: [VRFC 10-9466] unpacked array widths (2 versus 1) do not match [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:1010]
-WARNING: [VRFC 10-3823] variable 'quantum_lmul' might have multiple concurrent drivers [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_unit_mux.sv:223]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v:137]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v:138]
+WARNING: [VRFC 10-9466] unpacked array widths (2 versus 1) do not match [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:1010]
+WARNING: [VRFC 10-9466] unpacked array widths (2 versus 1) do not match [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:1011]
+WARNING: [VRFC 10-3823] variable 'quantum_lmul' might have multiple concurrent drivers [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_unit_mux.sv:224]
 Completed static elaboration
 Starting simulation data flow analysis
-WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v" Line 3. Module vproc_bell_tb has a timescale but at least one module in design doesn't have timescale.
-WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v" Line 3. Module vproc_bell_tb has a timescale but at least one module in design doesn't have timescale.
-WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/glbl.v" Line 6. Module glbl has a timescale but at least one module in design doesn't have timescale.
-WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/glbl.v" Line 6. Module glbl has a timescale but at least one module in design doesn't have timescale.
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:559]
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_unit_mux.sv:337]
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:359]
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:360]
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:361]
-WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:365]
+WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v" Line 3. Module vproc_bell_tb has a timescale but at least one module in design doesn't have timescale.
+WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_bell_tb.v" Line 3. Module vproc_bell_tb has a timescale but at least one module in design doesn't have timescale.
+WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/glbl.v" Line 6. Module glbl has a timescale but at least one module in design doesn't have timescale.
+WARNING: [XSIM 43-4100] "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/build/qvproc/qvproc.sim/sim_1/behav/xsim/glbl.v" Line 6. Module glbl has a timescale but at least one module in design doesn't have timescale.
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:560]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_unit_mux.sv:338]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:360]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:361]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:362]
+WARNING: [VRFC 10-2649] an enum variable may only be assigned the same enum typed variable or one of its values [/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/vproc_core.sv:366]
 Completed simulation data flow analysis
 Time Resolution for simulation is 1ps
 Compiling package xil_defaultlib.vproc_pkg

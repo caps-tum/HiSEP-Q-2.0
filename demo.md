@@ -79,6 +79,49 @@ NOTE!: Since the vector push out qubit index on after each other, so the schedul
 | `0x1008` | `0x07050301` | target qubit indices:  1, 3, 5, 7        |
 | `0x100C` | `0x0F0D0B09` | target qubit indices:  9, 11, 13, 15     | -->
 
+Output:
+
+```
+=== Simulation log (last 40 lines) ===
+[AWG][t_cnt=96]   qubit[06]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[08]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[10]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[12]  gate=0x68  role=CTRL
+[AWG][t_cnt=96]   qubit[14]  gate=0x68  role=CTRL
+[QDISP_TB][cycle=153][MEASURE] measure_done=1 (sent)
+[QDISP_TB][cycle=155][MEASURE] qvsg_meas=0 resume
+[QDISP_TB][cycle=156][INSTR] f0610657  V.SINGLE(resume) vd6, v2, x6
+[QDISP_TB][cycle=157][INSTR] 0000006f  jal x0, 0                  
+[QDISP_TB][cycle=165][QX_START] op=16(QV.SINGLE   ) id=6 vd=12 elem2=00000066 elem3=f0000600 ready=1
+[QDISP_TB][cycle=165][QX] idx=24 op=QV.SINGLE    id=6 elem1=00000001 elem2=00000066 elem3=f0000600 ready=1 t_cnt=155
+[QDISP_TB][cycle=165][RESUME] first post-measure event seen
+[QDISP_TB][cycle=166][QX] idx=25 op=QV.SINGLE    id=6 elem1=00000003 elem2=00000066 elem3=f0000600 ready=1 t_cnt=156
+[QDISP_TB][cycle=167][QX] idx=26 op=QV.SINGLE    id=6 elem1=00000005 elem2=00000066 elem3=f0000600 ready=1 t_cnt=157
+[QDISP_TB][cycle=168][QX] idx=27 op=QV.SINGLE    id=6 elem1=00000007 elem2=00000066 elem3=f0000600 ready=1 t_cnt=158
+[QDISP_TB][cycle=169][QX] idx=28 op=QV.SINGLE    id=6 elem1=00000009 elem2=00000066 elem3=f0000600 ready=1 t_cnt=159
+[QDISP_TB][cycle=170][QX] idx=29 op=QV.SINGLE    id=6 elem1=0000000b elem2=00000066 elem3=f0000600 ready=1 t_cnt=160
+[QDISP_TB][cycle=171][QX] idx=30 op=QV.SINGLE    id=6 elem1=0000000d elem2=00000066 elem3=f0000600 ready=1 t_cnt=161
+[QDISP_TB][cycle=172][QX] idx=31 op=QV.SINGLE    id=6 elem1=0000000f elem2=00000066 elem3=f0000600 ready=1 t_cnt=162
+[AWG][t_cnt=167] valid_mask=1010101010101010  (cycle=177)
+[AWG][t_cnt=167]   qubit[01]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[03]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[05]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[07]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[09]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[11]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[13]  gate=0x78  role=CTRL
+[AWG][t_cnt=167]   qubit[15]  gate=0x78  role=CTRL
+[QDISP_TB][cycle=372][DONE] 200 idle cycles after last event
+
+[QDISP_TB] ===== CO-SIM SUMMARY =====
+[QDISP_TB]  cycles         : 372
+[QDISP_TB]  quantum events : 32
+[QDISP_TB]  qubit fires    : 40
+[QDISP_TB]  FIFO errors    : 0
+[QDISP_TB]  RESULT         : PASS – no FIFO overflows
+[QDISP_TB] ==========================
+```
+
 ---
 
 ## How to Run
