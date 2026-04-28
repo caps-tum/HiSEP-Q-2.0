@@ -138,7 +138,7 @@ Full walkthrough with timing analysis and design notes: [`demo.md`](demo.md)
 
 See [`qvproc_prj/README.md`](qvproc_prj/README.md) for:
 
-- Vivado project rebuild instructions (target: Alveo U55C, `xcu55c-fsvh2892-2L-e`)
+- Vivado project rebuild instructions (target ZCU216; Next target: Alveo U55C, `xcu55c-fsvh2892-2L-e`)
 - Complete quantum instruction encoding tables
 - `QV.ROT.V` mixed-width LMUL mapping
 - Compiler requirements and known traps
