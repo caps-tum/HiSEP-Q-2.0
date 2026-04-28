@@ -1,0 +1,110 @@
+[
+  {
+    "name": "mqtbench_bell_4",
+    "num_qubits": 8,
+    "qasm_gates": 12,
+    "batches": 3,
+    "max_vl": 4,
+    "text_words": 19,
+    "data_words": 8
+  },
+  {
+    "name": "mqtbench_bell_8",
+    "num_qubits": 16,
+    "qasm_gates": 24,
+    "batches": 3,
+    "max_vl": 8,
+    "text_words": 19,
+    "data_words": 8
+  },
+  {
+    "name": "mqtbench_ghz_16",
+    "num_qubits": 16,
+    "qasm_gates": 32,
+    "batches": 18,
+    "max_vl": 8,
+    "text_words": 111,
+    "data_words": 66
+  },
+  {
+    "name": "mqtbench_ghz_8",
+    "num_qubits": 8,
+    "qasm_gates": 16,
+    "batches": 9,
+    "max_vl": 8,
+    "text_words": 59,
+    "data_words": 32
+  },
+  {
+    "name": "mqtbench_graphstate_16_deg2_seed16",
+    "num_qubits": 16,
+    "qasm_gates": 80,
+    "batches": 37,
+    "max_vl": 8,
+    "text_words": 249,
+    "data_words": 106
+  },
+  {
+    "name": "mqtbench_graphstate_32_deg2_seed32",
+    "num_qubits": 32,
+    "qasm_gates": 160,
+    "batches": 73,
+    "max_vl": 8,
+    "text_words": 489,
+    "data_words": 210
+  },
+  {
+    "name": "mqtbench_graphstate_8_deg2_seed10",
+    "num_qubits": 8,
+    "qasm_gates": 40,
+    "batches": 21,
+    "max_vl": 8,
+    "text_words": 129,
+    "data_words": 58
+  },
+  {
+    "name": "mqtbench_qaoa_16_r2_seed10",
+    "num_qubits": 16,
+    "qasm_gates": 390,
+    "batches": 326,
+    "max_vl": 8,
+    "text_words": 1816,
+    "data_words": 1064
+  },
+  {
+    "name": "mqtbench_qaoa_8_r2_seed10",
+    "num_qubits": 8,
+    "qasm_gates": 108,
+    "batches": 81,
+    "max_vl": 8,
+    "text_words": 460,
+    "data_words": 262
+  },
+  {
+    "name": "mqtbench_qft_16",
+    "num_qubits": 16,
+    "qasm_gates": 632,
+    "batches": 513,
+    "max_vl": 8,
+    "text_words": 2961,
+    "data_words": 1506
+  },
+  {
+    "name": "mqtbench_qft_8",
+    "num_qubits": 8,
+    "qasm_gates": 156,
+    "batches": 128,
+    "max_vl": 8,
+    "text_words": 717,
+    "data_words": 368
+  },
+  {
+    "name": "mqtbench_twolocal_16_r3",
+    "num_qubits": 16,
+    "qasm_gates": 151,
+    "batches": 19,
+    "max_vl": 8,
+    "text_words": 91,
+    "data_words": 44
+  }
+]

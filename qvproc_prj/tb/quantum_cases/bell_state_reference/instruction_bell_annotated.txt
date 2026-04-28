@@ -1,0 +1,49 @@
+// =====================================================================
+// Bell-state reference machine code  (8 Bell pairs, qubits [0..15])
+// Verified PASS in vproc_qdisp_bell_tb cosim:
+//   quantum events = 32  (H8 + CNOT8 + MEAS8 + RESUME8)
+//   qubit fires    = 40
+//   FIFO errors    = 0
+//   full halt-resume cycle observed:
+//     qvsg_meas=1 -> measure_done=1 -> qvsg_meas=0 -> resume events fire
+//
+// ISA: HiSEP-Q 2.0 quantum extension on top of RVV (RV32IMC + RVV + Q-ext)
+// Config: vproc_config_dual_128_32 (VLEN=128, dual pipeline 32/64-bit)
+// =====================================================================
+
+// ----- Setup scalar tag registers -----
+06600313    // addi x6, x0, 0x66            ; x6 <- 0x66  (resume tag carried by F0... marker)
+05500393    // addi x7, x0, 0x55            ; x7 <- 0x55  (gate tag carried by qv.h / qv.meas)
+
+// ----- Configure vector length: AVL=8, e8, mf2 (VL = vlmax = 8) -----
+00800293    // addi x5, x0, 8               ; x5 <- 8  (AVL)
+0C72F057    // vsetvli x0, x5, e8, mf2, ta, ma
+            //   funct3=111  rd=x0  rs1=x5
+            //   zimm[10:0] = 0x0C7 -> vlmul=mf2, vsew=e8, vta=1, vma=1
+            //   result: VL = 8 (= vlmax for VLEN=128, e8, mf2)
+00000013    // nop                          ; pipeline padding
+
+// ----- Load qubit-index vectors (single setup, used by all 4 quantum ops) -----
+00001537    // lui  a0, 0x1                 ; a0 <- 0x00001000  (data base)
+02050087    // vle8.v v1, (a0)              ; v1 <- 8 ctrl qubits = [0,2,4,6,8,10,12,14]
+00850593    // addi a1, a0, 8               ; a1 <- 0x00001008
+02058107    // vle8.v v2, (a1)              ; v2 <- 8 tgt qubits  = [1,3,5,7,9,11,13,15]
+
+// ----- Quantum gates (back-to-back, no per-batch reload) -----
+C8708657    // qv.h     vd, v1, x7, 12      ; gate_id=0x64 (H)
+            //   funct6=110010, vm=0, gate_id[31:25]=0x64
+            //   vs1=v1 (ctrl qubits), vs2=x7 (gate tag), block_imm=12
+            //   -> 8 H-gate events fired in parallel on qubits in v1
+CC208657    // qv.cx    vd, v1, v2, 12      ; gate_id=0x66 (CNOT)
+            //   vs1=v1 (ctrl), vs2=v2 (tgt), block_imm=12
+            //   -> 8 CNOT events: (v1[i] -> v2[i]) for i in 0..7
+D0708657    // qv.meas  vd, v1, x7, 12      ; gate_id=0x68 (MEASURE)
+            //   vs1=v1 (qubits to measure), vs2=x7, block_imm=12
+            //   -> asserts qvsg_meas=1, halts Ibex until external measure_done=1
+F0610657    // qv.single(resume) v6, v2, x6, 12   ; gate_id=0x78 (RESUME marker)
+            //   vs1=v2, vs2=x6 (resume tag 0x66), bits[11:7]=12 (vd or block_imm)
+            //   -> consumed by elem unit AFTER measure_done; clears halt;
+            //      emits 8 resume events that drain the per-qubit timed FIFOs
+
+// ----- Halt -----
+0000006F    // jal x0, 0                    ; self-loop (program done)

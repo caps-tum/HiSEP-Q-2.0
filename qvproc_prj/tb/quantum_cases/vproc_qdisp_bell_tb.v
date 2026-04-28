@@ -31,7 +31,7 @@ module vproc_qdisp_bell_tb;
     parameter MEM_LATENCY              = 1;
     parameter VMEM_W                   = 32;
     parameter MAX_CYCLES               = 200000;
-    parameter EVENT_LOG_LIMIT          = 256;
+    parameter EVENT_LOG_LIMIT          = 32768;
     parameter POST_EVENT_IDLE_CYCLES   = 200;
     parameter MEASURE_DONE_DELAY_CYCLES= 50;
     parameter MEM_WORDS                = MEM_SZ / (MEM_W / 8);
@@ -465,20 +465,18 @@ module vproc_qdisp_bell_tb;
         for (i = 0; i < MAX_CYCLES; i = i + 1) begin
             @(posedge clk);
 
-            // End once the resume-marker stream is complete
-            if (resume_stream_seen &&
-                (quantum_last_cycle || resume_event_count >= NUM_QUBITS)) begin
-                $display("[QDISP_TB][cycle=%0d][DONE] resume stream complete (%0d events)",
-                         cycle_count, resume_event_count);
-                print_summary;
-                $finish;
-            end
-
-            // Idle-after-last-event timeout
+            // Termination condition: prefer idle-after-last-event so that
+            // any AWG fires queued behind the resume marker are not cut off.
+            // For programs without MEASURE / resume, this is the only path.
             if ((last_quantum_event_cycle >= 0) &&
                 ((cycle_count - last_quantum_event_cycle) >= POST_EVENT_IDLE_CYCLES)) begin
-                $display("[QDISP_TB][cycle=%0d][DONE] %0d idle cycles after last event",
-                         cycle_count, POST_EVENT_IDLE_CYCLES);
+                if (resume_stream_seen) begin
+                    $display("[QDISP_TB][cycle=%0d][DONE] resume stream complete (%0d events) + %0d idle",
+                             cycle_count, resume_event_count, POST_EVENT_IDLE_CYCLES);
+                end else begin
+                    $display("[QDISP_TB][cycle=%0d][DONE] %0d idle cycles after last event",
+                             cycle_count, POST_EVENT_IDLE_CYCLES);
+                end
                 print_summary;
                 $finish;
             end

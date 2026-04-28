@@ -111,7 +111,6 @@ module vproc_unit_mux import vproc_pkg::*; #(
     pack_flags [UNIT_CNT-1:0][RES_CNT-1:0]                unit_out_res_flags;
     logic      [UNIT_CNT-1:0][RES_CNT-1:0][MAX_RES_W-1:0] unit_out_res_data;
     logic      [UNIT_CNT-1:0][RES_CNT-1:0][MAX_RES_W-1:0] unit_out_res_mask;
-    vproc_pkg::cfg_lmul                                   quantum_lmul; // quantum qvproc
     logic      [UNIT_CNT-1:0]                             unit_out_pend_clear;
     logic      [UNIT_CNT-1:0][1:0]                        unit_out_pend_clear_cnt;
     logic      [UNIT_CNT-1:0]                             unit_out_instr_done;
@@ -152,6 +151,7 @@ module vproc_unit_mux import vproc_pkg::*; #(
                 logic [31:0]                         quantum_elem1; // quantum qvproc
                 logic [31:0]                         quantum_elem2; // quantum qvproc
                 logic [31:0]                         quantum_elem3; // quantum qvproc
+                vproc_pkg::cfg_lmul                  quantum_lmul; // quantum qvproc
                 vproc_pkg::cfg_emul                  quantum_emul; // quantum qvproc
                 logic [2:0]                          quantum_count_mul; // quantum qvproc
                 logic                                quantum_first_cycle; // quantum qvproc
