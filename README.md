@@ -12,36 +12,36 @@ HiSEP-Q 2.0 is a quantum control processor that extends the RISC-V V (RVV) vecto
                      RISC-V Assembly Program
                               │
                               ▼
-              ┌───────────────────────────────┐
-              │          vproc_qdisp_top       │
-              │                               │
-              │  ┌──────────┐  ┌───────────┐  │
-              │  │  Ibex    │  │  vproc    │  │
-              │  │ RISC-V   │─▶│  RVV      │  │
-              │  │  core    │  │  vector   │  │
-              │  └──────────┘  │  core     │  │
-              │                └─────┬─────┘  │
-              │                      │quantum  │
-              │                      │ stream  │
-              │                ┌─────▼──────┐  │
-              │  t_cnt ───────▶│  quantum_  │  │
-              │  (free-run)    │ dispatcher │  │
-              │                └─────┬──────┘  │
-              └───────────────────── │ ────────┘
-                                     │
-                    qubit_gate_o  ───┤  per-qubit gate ID
-                    qubit_valid_o ───┤  one-cycle fire pulse
-                    qubit_ctrl_o  ───┘  control vs. target role
-                                     │
-                                     ▼
+              ┌─────────────────────────────────┐
+              │          vproc_qdisp_top        │
+              │                                 │
+              │  ┌──────────┐   ┌───────────┐   │
+              │  │  Ibex    │   │  vproc    │   │
+              │  │ RISC-V   │─▶│  RVV      │   │
+              │  │  core    │   │  vector   │   │
+              │  └──────────┘   │  core     │   │
+              │                 └─────┬─────┘   │
+              │                       │quantum  │
+              │                       │ stream  │
+              │                 ┌─────▼──────┐  │
+              │   t_cnt ──────▶│  quantum_  │  │
+              │   (free-run)    │ dispatcher │  │
+              │                 └─────┬──────┘  │
+              └────────────────────── │ ────────┘
+                                      │
+                     qubit_gate_o  ───┤  per-qubit gate ID
+                     qubit_valid_o ───┤  one-cycle fire pulse
+                     qubit_ctrl_o  ───┘  control vs. target role
+                                      │
+                                      ▼
                               AWG / Control Electronics
 ```
 
-**Ibex** is an open-source RISC-V core (lowRISC) that handles scalar computation and program control flow.
+**Ibex** ([github](https://github.com/lowrisc/ibex)) is an open-source RISC-V core (lowRISC) that handles scalar computation and program control flow.
 
-**vproc** is an RVV-compliant vector core that processes quantum gate instructions element-by-element — one qubit index per clock cycle — producing a streaming output of `(op, elem1, elem2, elem3)` per beat.
+**vproc** ([github](https://github.com/vproc/vicuna2_core)) is an RVV-compliant vector core that processes quantum gate instructions element-by-element — one qubit index per clock cycle — producing a streaming output of `(op, elem1, elem2, elem3)` per beat.
 
-**quantum_dispatcher** converts the vproc stream into precise, per-qubit timed firing pulses. It writes each qubit's gate into a dedicated FIFO tagged with a `dispatch_time`. A `time_controller` FSM per qubit watches the global `t_cnt` counter and pulses `qubit_valid_o` for exactly one cycle when the scheduled time arrives. The result is a cycle-accurate gate stream ready to drive an Arbitrary Waveform Generator (AWG).
+**quantum_dispatcher** (this repo) converts the vproc stream into precise, per-qubit timed firing pulses. It writes each qubit's gate into a dedicated FIFO tagged with a `dispatch_time`. A `time_controller` FSM per qubit watches the global `t_cnt` counter and pulses `qubit_valid_o` for exactly one cycle when the scheduled time arrives. The result is a cycle-accurate gate stream ready to drive an Arbitrary Waveform Generator (AWG).
 
 ---
 
