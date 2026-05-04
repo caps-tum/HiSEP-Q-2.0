@@ -360,7 +360,7 @@ Standard RVV unit-stride loads move the prepared indices from memory into vector
 Unit-stride loads do not accept immediate offsets, so the second address is computed
 explicitly with `addi`.
 
-```riscv
+```s
 # ── 3. Load Indices from Memory into Vector Registers ─────────────────────
 # Set base pointer to the qubit-index buffer.
 lui     a0, 0x1              # a0 = 0x1000
