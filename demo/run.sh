@@ -1,21 +1,19 @@
 #!/usr/bin/env bash
 # run.sh  –  Unified HiSEP-Q co-simulation driver
 #
-# Combines the previous run_cosim.sh (single-case) and run_mqtbench.sh (batch).
-# All test cases live in cases/<name>.mem (instruction + data merged into one file).
+# All test programs live as <name>.mem alongside this script in demo/.
+# Drop a new combined .mem (or use --elf) into demo/ and run ./run.sh <name>.
 #
 # Usage:
 #   ./run.sh [OPTIONS] [CASE]
 #
-#   CASE        Name of a .mem file in cases/ (without extension).
+#   CASE        Basename of a .mem file in demo/ (without extension).
 #               Default: bell_generic
 #
 # Options:
-#   --gui          Open in Vivado waveform viewer (single-case only).
-#   --elf FILE     Load from ELF instead of a cases/ file.
+#   --gui          Open in Vivado waveform viewer.
+#   --elf FILE     Load from ELF instead of a demo/ .mem file.
 #                  (converts via elf2mem.sh, then simulates)
-#   --batch [GLOB] Run all cases (or those matching GLOB) sequentially
-#                  and write a summary CSV.
 #   --no-compile   Skip xvlog/xelab; reuse the existing snapshot.
 #                  Speeds up re-runs when only the .mem file changed.
 #
@@ -23,25 +21,20 @@
 #   ./run.sh                              # Bell generic demo (default)
 #   ./run.sh bell_8pair --gui             # 8-pair Bell state in GUI
 #   ./run.sh mqtbench_ghz_16             # MQTBench GHZ 16-qubit
-#   ./run.sh --batch                     # all cases, CSV summary
-#   ./run.sh --batch mqtbench_*          # batch: MQTBench cases only
 #   ./run.sh --elf build/program.elf     # load from ELF
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-QC_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-PRJ_DIR="$(cd "${QC_DIR}/../.." && pwd)"
+PRJ_DIR="$(cd "${SCRIPT_DIR}/../qvproc_prj" && pwd)"
+QC_DIR="${PRJ_DIR}/tb/quantum_cases"
 RTL_DIR="${PRJ_DIR}/rtl"
 CFG_DIR="${PRJ_DIR}/configs"
 IBEX_DIR="${PRJ_DIR}/core/ibex"
 PRIM_DIR="${IBEX_DIR}/vendor/lowrisc_ip/ip/prim/rtl"
 DV_DIR="${IBEX_DIR}/vendor/lowrisc_ip/dv/sv/dv_utils"
-CASES_DIR="${SCRIPT_DIR}/cases"
 
 GUI=0
-BATCH=0
-BATCH_GLOB="*"
 NO_COMPILE=0
 ELF_FILE=""
 CASE_NAME="bell_generic"
@@ -51,12 +44,6 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --gui)        GUI=1 ;;
         --no-compile) NO_COMPILE=1 ;;
-        --batch)
-            BATCH=1
-            if [[ $# -gt 1 && "${2}" != --* ]]; then
-                BATCH_GLOB="$2"; shift
-            fi
-            ;;
         --elf)
             ELF_FILE="$2"; shift
             ;;
@@ -75,7 +62,7 @@ echo ""
 
 cd "${SCRIPT_DIR}"
 
-# ── compile + elaborate (shared for single and batch modes) ─────────────────
+# ── compile + elaborate ─────────────────────────────────────────────────────
 compile_and_elab() {
     echo "[1/3] Compiling Verilog primitives..."
     xvlog --work xil_defaultlib \
@@ -180,84 +167,18 @@ run_one() {
     fi
 }
 
-# ── extract metric from a log file ─────────────────────────────────────────
-extract_csv_row() {
-    local name="$1"
-    local log="$2"
-    local rc="$3"
-
-    local first_instr first_meas qvsg_clear last_evt nq_evt nq_fires result asserted cleared
-
-    first_instr=$(grep -m1 "INSTR\] "      "$log" | grep -oP "cycle=\K[0-9]+" | head -1)
-    first_meas=$(grep -m1  "qvsg_meas=1"   "$log" | grep -oP "cycle=\K[0-9]+" | head -1)
-    qvsg_clear=$(grep -m1  "qvsg_meas=0"   "$log" | grep -oP "cycle=\K[0-9]+" | head -1)
-    last_evt=$(grep         "QX\] idx="    "$log" | tail -1 | grep -oP "cycle=\K[0-9]+")
-    nq_evt=$(grep  -E "quantum events\s*:" "$log" | tail -1 | grep -oP "[0-9]+")
-    nq_fires=$(grep -E "qubit fires\s*:"  "$log" | tail -1 | grep -oP "[0-9]+")
-    result=$(grep  -E "RESULT\s*:"        "$log" | tail -1 | sed 's/.*RESULT *: *//' | head -c 40)
-
-    asserted=$([ -n "${first_meas:-}" ] && echo "yes" || echo "no")
-    cleared=$([ -n "${qvsg_clear:-}" ] && echo "yes" || echo "no")
-
-    echo "${name},${rc},${first_instr:-NA},${first_meas:-NA},${last_evt:-NA},${nq_evt:-NA},${nq_fires:-NA},${asserted},${cleared},${result:-NA}"
-}
-
-# ═══════════════════════════════════════════════════════════════════════════
-# BATCH MODE
-# ═══════════════════════════════════════════════════════════════════════════
-if [[ $BATCH -eq 1 ]]; then
-    [[ $NO_COMPILE -eq 0 ]] && compile_and_elab
-
-    LOGDIR="${SCRIPT_DIR}/logs"
-    mkdir -p "$LOGDIR"
-    CSV="${LOGDIR}/summary.csv"
-
-    echo "name,exit_code,first_instr_cycle,first_meas_cycle,last_event_cycle,total_quantum_events,total_qubit_fires,qvsg_meas_asserted,qvsg_meas_cleared,result" \
-        > "$CSV"
-
-    shopt -s nullglob
-    cases=( "${CASES_DIR}"/${BATCH_GLOB}.mem )
-    if [[ ${#cases[@]} -eq 0 ]]; then
-        echo "No cases matching '${BATCH_GLOB}' in ${CASES_DIR}" >&2
-        exit 1
-    fi
-
-    for mem in "${cases[@]}"; do
-        name=$(basename "$mem" .mem)
-        log="${LOGDIR}/${name}.log"
-        echo "==== ${name} ===="
-        timeout 120 xsim vproc_qdisp_bell_tb_sim --runall \
-            --testplusarg "MEM_FILE=${mem}" \
-            > "$log" 2>&1
-        rc=$?
-        extract_csv_row "$name" "$log" "$rc" >> "$CSV"
-    done
-
-    echo ""
-    echo "=== Batch summary ==="
-    column -t -s, "$CSV"
-    echo ""
-    echo "Full logs: ${LOGDIR}/"
-    echo "CSV:       ${CSV}"
-    exit 0
-fi
-
-# ═══════════════════════════════════════════════════════════════════════════
-# SINGLE-CASE MODE
-# ═══════════════════════════════════════════════════════════════════════════
-
 # Resolve the .mem file to use
 if [[ -n "$ELF_FILE" ]]; then
     [[ ! -f "$ELF_FILE" ]] && { echo "ELF not found: $ELF_FILE" >&2; exit 1; }
     MEM_FILE="${SCRIPT_DIR}/elf_combined.mem"
     echo "[ELF] Converting ${ELF_FILE} -> ${MEM_FILE}"
     bash "${SCRIPT_DIR}/elf2mem.sh" "$ELF_FILE" "$MEM_FILE"
-elif [[ -f "${CASES_DIR}/${CASE_NAME}.mem" ]]; then
-    MEM_FILE="${CASES_DIR}/${CASE_NAME}.mem"
+elif [[ -f "${SCRIPT_DIR}/${CASE_NAME}.mem" ]]; then
+    MEM_FILE="${SCRIPT_DIR}/${CASE_NAME}.mem"
 else
-    echo "Case not found: ${CASES_DIR}/${CASE_NAME}.mem" >&2
+    echo "Case not found: ${SCRIPT_DIR}/${CASE_NAME}.mem" >&2
     echo "Available cases:"
-    ls "${CASES_DIR}/" | sed 's/\.mem$//' | sed 's/^/  /'
+    ( cd "${SCRIPT_DIR}" && ls *.mem 2>/dev/null | sed 's/\.mem$//' | sed 's/^/  /' )
     exit 1
 fi
 

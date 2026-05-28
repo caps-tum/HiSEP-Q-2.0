@@ -127,9 +127,9 @@ Output:
 ## How to Run
 
 ```bash
-cd qvproc_prj/tb/quantum_cases/cosim
-./run_cosim.sh          # compile + elaborate + simulate (text log)
-./run_cosim.sh --gui    # open in Vivado waveform viewer
+cd demo
+./run.sh bell_8pair          # compile + elaborate + simulate (text log)
+./run.sh --gui bell_8pair    # open in Vivado waveform viewer
 ```
 
 Requirements: Xilinx `xvlog` / `xelab` / `xsim` on PATH.
@@ -138,7 +138,7 @@ Requirements: Xilinx `xvlog` / `xelab` / `xsim` on PATH.
 
 ## Observed Simulation Results
 
-All results from a single run of `run_cosim.sh` (372 clock cycles total).
+All results from a single run of `./run.sh bell_8pair` (372 clock cycles total).
 
 ### Event 1 — Hadamard Gate (QV.SINGLE, GateID=0x64)
 

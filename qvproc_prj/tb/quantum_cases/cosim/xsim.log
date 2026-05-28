@@ -3,30 +3,29 @@
 # SW Build 5239630 on Fri Nov 08 22:34:34 MST 2024
 # IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
 # SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
-# Start of session at: Fri Apr 24 23:08:09 2026
-# Process ID         : 1587602
-# Current directory  : /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim
+# Start of session at: Thu May 28 15:54:09 2026
+# Process ID         : 2975711
+# Current directory  : /u/home/guxi/Documents/QVCP/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim
 # Command line       : xsim -mode tcl -source {xsim.dir/vproc_qdisp_bell_tb_sim/xsim_script.tcl}
-# Log file           : /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/xsim.log
-# Journal file       : /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/xsim.jou
-# Running On         : i10se26
+# Log file           : /u/home/guxi/Documents/QVCP/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/xsim.log
+# Journal file       : /u/home/guxi/Documents/QVCP/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/xsim.jou
+# Running On         : i10se23
 # Platform           : Ubuntu
 # Operating System   : Ubuntu 24.04.4 LTS
-# Processor Detail   : AMD EPYC 9754 128-Core Processor
-# CPU Frequency      : 1377.627 MHz
-# CPU Physical cores : 128
-# CPU Logical cores  : 256
-# Host memory        : 1216550 MB
+# Processor Detail   : AMD EPYC 9374F 32-Core Processor
+# CPU Frequency      : 1500.000 MHz
+# CPU Physical cores : 64
+# CPU Logical cores  : 128
+# Host memory        : 405254 MB
 # Swap memory        : 8589 MB
-# Total Virtual      : 1225140 MB
-# Available Virtual  : 1194761 MB
+# Total Virtual      : 413844 MB
+# Available Virtual  : 401663 MB
 #-----------------------------------------------------------
 source xsim.dir/vproc_qdisp_bell_tb_sim/xsim_script.tcl
-# xsim {vproc_qdisp_bell_tb_sim} -testplusarg INSTR_MEM_FILE=/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem -testplusarg DATA_MEM_FILE=/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem -autoloadwcfg -runall
+# xsim {vproc_qdisp_bell_tb_sim} -testplusarg MEM_FILE=/u/home/guxi/Documents/QVCP/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/cases/bell_8pair.mem -autoloadwcfg -runall
 Time resolution is 1 ps
 run -all
-[QDISP_TB][INIT] instruction mem : /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem
-[QDISP_TB][INIT] data mem        : /u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem
+[QDISP_TB][INIT] mem file: /u/home/guxi/Documents/QVCP/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/cases/bell_8pair.mem
 [QDISP_TB][INIT] Bell co-simulation started.
 [QDISP_TB][INIT] NUM_QUBITS=16  FIXED_LATENCY=16  TIME_WIDTH=20
               140000: Illegal instruction (hart 0) at PC 0x00000080: 0x00010413
@@ -130,7 +129,7 @@ run -all
 [AWG][t_cnt=167]   qubit[11]  gate=0x78  role=CTRL
 [AWG][t_cnt=167]   qubit[13]  gate=0x78  role=CTRL
 [AWG][t_cnt=167]   qubit[15]  gate=0x78  role=CTRL
-[QDISP_TB][cycle=372][DONE] 200 idle cycles after last event
+[QDISP_TB][cycle=372][DONE] resume stream complete (8 events) + 200 idle
 
 [QDISP_TB] ===== CO-SIM SUMMARY =====
 [QDISP_TB]  cycles         : 372
@@ -139,6 +138,6 @@ run -all
 [QDISP_TB]  FIFO errors    : 0
 [QDISP_TB]  RESULT         : PASS – no FIFO overflows
 [QDISP_TB] ==========================
-$finish called at time : 3715 ns : File "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_qdisp_bell_tb.v" Line 483
+$finish called at time : 3715 ns : File "/u/home/guxi/Documents/QVCP/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_qdisp_bell_tb.v" Line 494
 exit
-INFO: [Common 17-206] Exiting xsim at Fri Apr 24 23:08:12 2026...
+INFO: [Common 17-206] Exiting xsim at Thu May 28 15:54:11 2026...

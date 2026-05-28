@@ -84,6 +84,11 @@ Full ISA encoding details: [`HiSEPQ_ISA_spec.md`](HiSEPQ_ISA_spec.md)
 HiSEP-Q-2.0/
 ├── HiSEPQ_ISA_spec.md          # Full ISA specification
 ├── demo.md                     # Bell-state demo walkthrough and observed results
+├── demo/                       # Co-simulation entry point
+│   ├── run.sh                  # Driver (xvlog + xelab + xsim)
+│   ├── elf2mem.sh              # ELF → combined .mem converter
+│   ├── README.md               # Per-case notes
+│   └── *.mem                   # 20 combined memory images (bell / mqtbench / qv)
 └── qvproc_prj/
     ├── README.md               # Hardware details, build instructions, instruction reference
     ├── configs/                # vproc configuration packages (SEW, LMUL, VREG type)
@@ -96,12 +101,12 @@ HiSEP-Q-2.0/
     │   └── inst_fifo.v
     ├── docs/
     │   └── qsg_measure_spec.md # Mid-circuit measurement flow specification
+    ├── mqtbench_compiled/      # Source .qasm + .s for the mqtbench_*.mem programs
     └── tb/quantum_cases/
-        ├── cosim/
-        │   └── run_cosim.sh    # Self-contained co-simulation script (xvlog/xelab/xsim)
-        ├── vproc_qdisp_bell_tb.v
-        ├── instruction_bell.mem
-        └── data_bell.mem
+        ├── vproc_qdisp_bell_tb.v       # Main testbench (used by demo/run.sh)
+        ├── instruction_bell.mem        # Legacy split-format programs
+        ├── data_bell.mem
+        └── vproc_{bell,qpr,qrg,qrv,qsg}_tb.v  # Legacy per-feature testbenches
 ```
 
 ---
@@ -111,9 +116,10 @@ HiSEP-Q-2.0/
 The demo prepares 8 Bell pairs across 16 physical qubits and shows the complete gate stream output with control/target role labels.
 
 ```bash
-cd qvproc_prj/tb/quantum_cases/cosim
-./run_cosim.sh          # text log
-./run_cosim.sh --gui    # open in Vivado waveform viewer
+cd demo
+./run.sh                # default: bell_generic
+./run.sh bell_8pair      # reference Bell demo (16 qubits, VL=8)
+./run.sh --gui bell_8pair # open in Vivado waveform viewer
 ```
 
 **Requirements:** Xilinx `xvlog` / `xelab` / `xsim` on PATH.

@@ -1,10 +1,10 @@
-INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/inst_fifo.v" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/guxi/Documents/QVCP/HiSEP-Q-2.0/qvproc_prj/rtl/inst_fifo.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module inst_fifo
-INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/time_controller.v" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/guxi/Documents/QVCP/HiSEP-Q-2.0/qvproc_prj/rtl/time_controller.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module time_controller
-INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/timed_fifo.v" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/guxi/Documents/QVCP/HiSEP-Q-2.0/qvproc_prj/rtl/timed_fifo.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module timed_fifo
-INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/rtl/quantum_dispatcher.v" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/guxi/Documents/QVCP/HiSEP-Q-2.0/qvproc_prj/rtl/quantum_dispatcher.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module quantum_dispatcher
-INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_qdisp_bell_tb.v" into library xil_defaultlib
+INFO: [VRFC 10-2263] Analyzing Verilog file "/u/home/guxi/Documents/QVCP/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/vproc_qdisp_bell_tb.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module vproc_qdisp_bell_tb

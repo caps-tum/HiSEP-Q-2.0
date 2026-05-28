@@ -1,1 +1,1 @@
-xsim {vproc_qdisp_bell_tb_sim} -testplusarg INSTR_MEM_FILE=/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem -testplusarg DATA_MEM_FILE=/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem -autoloadwcfg -runall
+xsim {vproc_qdisp_bell_tb_sim} -testplusarg MEM_FILE=/u/home/guxi/Documents/QVCP/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/cases/bell_8pair.mem -autoloadwcfg -runall

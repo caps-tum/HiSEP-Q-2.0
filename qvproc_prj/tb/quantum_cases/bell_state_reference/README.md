@@ -71,14 +71,26 @@ bugs that this reference fixes:
 
 ## Running the cosim
 
-From `qvproc_prj/tb/quantum_cases/cosim/`:
+The combined-format equivalent of these split `.mem` files lives in
+`demo/bell_8pair.mem` at the repo root. The simplest way to run the
+canonical Bell demo is:
+
+```bash
+cd demo
+./run.sh bell_8pair
+```
+
+If you specifically want to load the split-format files in *this* folder
+(via the legacy `INSTR_MEM_FILE` / `DATA_MEM_FILE` plusargs which the
+testbench still accepts), first build the snapshot once with
+`./run.sh bell_8pair`, then from `demo/`:
 
 ```bash
 xsim vproc_qdisp_bell_tb_sim --runall \
-    --testplusarg "INSTR_MEM_FILE=../bell_state_reference/instruction_bell.mem" \
-    --testplusarg "DATA_MEM_FILE=../bell_state_reference/data_bell.mem"
+    --testplusarg "INSTR_MEM_FILE=../qvproc_prj/tb/quantum_cases/bell_state_reference/instruction_bell.mem" \
+    --testplusarg "DATA_MEM_FILE=../qvproc_prj/tb/quantum_cases/bell_state_reference/data_bell.mem"
 ```
 
-(or just `bash run_cosim.sh` -- the default already points at the
-canonical `instruction_bell.mem` / `data_bell.mem` in the parent dir,
-which are byte-identical copies of the files in this folder.)
+The split files here are byte-identical to the originals at
+`../instruction_bell.mem` + `../data_bell.mem` (which the legacy
+`vproc_bell_tb` testbench loads by default).
