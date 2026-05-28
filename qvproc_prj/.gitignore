@@ -1,3 +1,14 @@
 plot/
 build/
-tb/quantum_cases/cosim/
+
+# xsim compiled artifacts — ignore only build outputs inside cosim/
+tb/quantum_cases/cosim/xsim.dir/
+tb/quantum_cases/cosim/xsim.jou
+tb/quantum_cases/cosim/xsim.log
+tb/quantum_cases/cosim/xelab.log
+tb/quantum_cases/cosim/xelab.pb
+tb/quantum_cases/cosim/xvlog*.log
+tb/quantum_cases/cosim/xvlog*.pb
+tb/quantum_cases/cosim/*.wdb
+tb/quantum_cases/cosim/*.backup.*
+tb/quantum_cases/cosim/logs/

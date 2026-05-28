@@ -164,6 +164,7 @@ module vproc_qdisp_bell_tb;
     integer i;
     reg [1023:0] instr_mem_file;
     reg [1023:0] data_mem_file;
+    reg [1023:0] combined_mem_file;
 
     reg [MEM_LATENCY-1:0] mem_rvalid_queue;
     reg [31:0]            mem_rdata_queue  [0:MEM_LATENCY-1];
@@ -442,16 +443,28 @@ module vproc_qdisp_bell_tb;
             mem_err_queue[i]    = 1'b0;
         end
 
-        // Load memories (override with +args if needed)
-        if (!$value$plusargs("INSTR_MEM_FILE=%s", instr_mem_file))
-            instr_mem_file = "instruction_bell.mem";
-        if (!$value$plusargs("DATA_MEM_FILE=%s", data_mem_file))
-            data_mem_file  = "data_bell.mem";
-
-        $display("[QDISP_TB][INIT] instruction mem : %0s", instr_mem_file);
-        $readmemh(instr_mem_file, mem);
-        $display("[QDISP_TB][INIT] data mem        : %0s", data_mem_file);
-        $readmemh(data_mem_file,  mem);
+        // Load memory.
+        // Primary:  +MEM_FILE=combined.mem  (single file, @addr markers for data section)
+        // Fallback: +INSTR_MEM_FILE=x +DATA_MEM_FILE=y  (legacy split format)
+        if ($value$plusargs("MEM_FILE=%s", combined_mem_file)) begin
+            $display("[QDISP_TB][INIT] mem file: %0s", combined_mem_file);
+            $readmemh(combined_mem_file, mem);
+        end else begin
+            if (!$value$plusargs("INSTR_MEM_FILE=%s", instr_mem_file))
+                instr_mem_file = "";
+            if (!$value$plusargs("DATA_MEM_FILE=%s", data_mem_file))
+                data_mem_file  = "";
+            if (instr_mem_file == "") begin
+                $display("[QDISP_TB][INIT][WARN] No MEM_FILE or INSTR_MEM_FILE supplied — memory will be zero.");
+            end else begin
+                $display("[QDISP_TB][INIT] instruction mem : %0s", instr_mem_file);
+                $readmemh(instr_mem_file, mem);
+                if (data_mem_file != "") begin
+                    $display("[QDISP_TB][INIT] data mem        : %0s", data_mem_file);
+                    $readmemh(data_mem_file,  mem);
+                end
+            end
+        end
         $display("[QDISP_TB][INIT] Bell co-simulation started.");
         $display("[QDISP_TB][INIT] NUM_QUBITS=%0d  FIXED_LATENCY=%0d  TIME_WIDTH=%0d",
                  NUM_QUBITS, FIXED_LATENCY, TIME_WIDTH);

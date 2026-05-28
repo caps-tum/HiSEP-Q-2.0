@@ -1,0 +1,327 @@
+----------------------------------------------------------------------
+Q1. SEW for qubits is 8 bits (always) and for angles 32 bits (always)
+    is hardcoded right now, right? Setting anything else via vsetvli
+    is invalid at the moment (maybe not for all times)?
+----------------------------------------------------------------------
+Yes and no -- the two cases are actually different:
+
+(a) Qubit-index SEW is NOT hardcoded.
+    SEW remains a normal RVV parameter and is software-configurable
+    via vsetvli. The HiSEP-Q extension just documents SEW=8 as the
+    intended convention for qubit-target vectors, so maximum target 
+    address can be 2^8 in this case:
+      - VLEN=128 with SEW=8 yields a clean 16 qubits per LMUL=1
+        register and up to 128 qubits with LMUL=m8.
+    A user is free to call vsetvli with SEW=16/32/64 and the vector
+    pipeline will accept it, but the dispatcher will then re-bin
+    those wider elements as if they were 8-bit qubit IDs, which is
+    semantically not what the program expects. So SEW=8 for qubit
+    targets is a *convention enforced by software*, not a hardware
+    lock.
+
+(b) Angle width IS currently hardcoded at 32 bits.
+    The dispatcher always reads:
+      - QV.ROT.G: rs2 as a full 32-bit scalar payload (forwarded on
+        elem2 verbatim).
+      - QV.ROT.V: each vs2 element as a 32-bit angle,
+        regardless of the SEW the program set with vsetvli. This
+        is what makes QV.ROT.V a "mixed-width" instruction
+        (vs1@SEW=8, vs2@SEW=32, both consumed by the same op).
+    A future revision could expose the angle width as a
+    configurable field (e.g., a CSR or a dedicated funct3 sub-class
+    for SEW=16 angles), but for now it is fixed.
+
+Short answer: SEW for qubit IDs is configurable but conventionally
+8; the 32-bit angle width is the only true hardcode today.
+
+
+----------------------------------------------------------------------
+Q2. Why is MSB=0 in the 8-bit qubit elements? My feeling was it is
+    related to something yet to be implemented, right?
+----------------------------------------------------------------------
+Correct. Spec section 2.1:
+    "The MSB (bit 7) of each element is currently unused and should
+     be written as zero."
+
+the MSB will be repurposed as a per-element mask / validity bit, so
+that software can selectively enable individual qubits within a
+vector batch without having to re-issue the instruction with a
+different VL. We require MSB=0 today purely so that programs written
+now remain forward-compatible after the mask extension lands. That's a 
+TODO stuff in the future. 
+
+
+----------------------------------------------------------------------
+Q3. VLEN (of the concrete instance) is 128, right?
+----------------------------------------------------------------------
+Yes. The synthesised instance uses VLEN=128. Combined with SEW=8,
+LMUL controls the number of qubits dispatched per instruction:
+
+    LMUL=mf2   ->  8 qubits / instruction   (used in the demo)
+    LMUL=m1    -> 16
+    LMUL=m2    -> 32
+    LMUL=m4    -> 64
+    LMUL=m8    -> 128 qubits / instruction  (the headline number
+                                             quoted in our paper)
+
+The 128-qubit-per-instruction figure in the contributions list comes
+from VLEN=128 + SEW=8 + LMUL=m8, not from a wider VLEN.
+
+
+----------------------------------------------------------------------
+Q4. Angle encoding: Why leave the choice "Q16.16, or full-scale
+    mapping to 2*pi" open?
+Q5. Wouldn't it be simpler to just say "32 bits cover the full 2*pi
+    range equally"? Is Q16.16 useful for something?
+----------------------------------------------------------------------
+The deliberate decision is that the *hardware* does not interpret
+the 32-bit payload at all -- it just forwards it as elem2 to the
+back-end pulse generator (see spec section 3, "Angle encoding").
+The fixed-point format is therefore a software/back-end convention,
+not an ISA-level commitment.
+
+That said, your instinct is correct: from a hardware-simplicity
+standpoint there is *nothing to simplify* by picking one convention,
+because the dispatcher already treats the 32 bits as opaque. The
+choice only affects (a) the back-end DDS / phase-accumulator
+implementation and (b) the compiler's angle-lowering pass.
+
+Why we left both options on the table:
+
+  - Full-scale 2*pi mapping is the simplest for the back end (one
+    multiply-free angle-to-phase conversion) and is the right choice
+    if all you want is "phase in [0, 2*pi)" with uniform precision.
+
+  - Q16.16 is more general: it preserves a notion of "integer turns"
+    plus 16 fractional bits, and naturally supports signed angles
+    and angles that exceed [0, 2*pi) (useful for accumulators,
+    error-tracking, calibration drift, etc.). It is also the natural
+    fixed-point format for many existing classical control codebases,
+    so cross-tool interoperability is easier.
+
+Anyhow, we leave this as a not-touch thing, and this will only matter when
+we have a bachend simulator to interpret these informations
+
+
+----------------------------------------------------------------------
+Q6. The nop after each vsetvli -- this is just a pipelining issue of
+    the current implementation, nothing fundamental, right? A future
+    version will drop this constraint, right?
+----------------------------------------------------------------------
+Exactly right. From spec section 4.2:
+    "Implementation note: A guard nop must be placed immediately
+     after every vsetvli. The current RTL may reject a vle8.v that
+     follows vsetvli too closely due to a one-cycle vtype/vl
+     settling latency."
+
+This is a one-cycle settling artefact in the current vector
+front-end pipeline; it is not part of the RVV specification and not
+required by anything in the quantum extension. A future RTL revision
+will pipeline vtype/vl forwarding so that the nop becomes
+unnecessary, and existing binaries will continue to work (the nop
+just becomes redundant). 
+
+
+----------------------------------------------------------------------
+Q7. In `qv.h  vd, vs1, rs2, Block_imm` -- I guess vd should be
+    removed, right?
+----------------------------------------------------------------------
+Yes. None of the four quantum instructions (QV.SINGLE, QV.PAIR,
+QV.ROT.G, QV.ROT.V) writes to a vector register. The bits that the
+standard RVV R-type uses for vd ([11:7]) are repurposed in our
+extension as the Block_imm field. Showing both `vd` and `Block_imm`
+in the mnemonic is therefore redundant and misleading.
+
+The clean assembly form should be:
+
+    qv.h     vs1, rs2, Block_imm        # QV.SINGLE
+    qv.cx    vs1, vs2, Block_imm        # QV.PAIR
+    qv.rg    vs1, rs2, Block_imm        # QV.ROT.G
+    qv.rv    vs1, vs2, Block_imm        # QV.ROT.V
+
+The current `vd, ...` form in demo.md is a leftover from when the
+assembler still parsed the [11:7] slot through the standard RVV
+vd-token path; we will fix the demo and the spec to drop the spurious
+vd operand. Thanks for catching this.
+
+
+----------------------------------------------------------------------
+Q8. What is the purpose of rs2 for QV.SINGLE? It feels asymmetric
+    that QV.PAIR does not have it.
+----------------------------------------------------------------------
+The asymmetry is forced by slot pressure in the 32-bit R-type
+encoding, not by a deliberate semantic choice:
+
+  - QV.SINGLE only needs ONE vector operand (vs1 = target qubits),
+    so the vs2 slot ([24:20]) is unused for data. We currently don't 
+    use it for any purpose, just as a stuff to occupy the position.
+
+  - QV.PAIR needs TWO vector operands (vs1 = target, vs2 = source/
+    control), so the [24:20] slot is consumed by data and no slot
+    remains for an analogous scalar tag.
+
+
+----------------------------------------------------------------------
+Q9. Vivado stuff?
+----------------------------------------------------------------------
+We have the license at TUM, and if yours doen't work, I can add your user
+names in one of our server, so you can directly run the simulation our
+computer
+
+----------------------------------------------------------------------
+Q10. What purpose has the `data_bell.mem` file, why is
+     `instruction_bell.mem` not sufficient?
+----------------------------------------------------------------------
+Short anwser: should be sufficient in principle.
+
+The two files target different regions of the same flat memory model
+inside the testbench:
+
+  - `instruction_bell.mem` -- the **program text**.
+    Loaded starting at address 0x0. Contains the 32-bit machine-code
+    words the Ibex front-end fetches and executes (the `vsetvli`,
+    `vle8.v`, `qv.h`, `qv.cx`, `qv.meas`, ... sequence shown in
+    demo.md panel (c)).
+
+  - `data_bell.mem` -- the **operand data**.
+    Loaded starting at address 0x400 (note the leading `@00000400`
+    directive at the top of the file). Contains the qubit-ID arrays
+    that the `vle8.v` instructions load into vector registers
+    v1/v2.
+
+    For example, the bell program does:
+
+        lui   a0, 0x0          # a0 base address for qubit-ID array
+        addi  a0, a0, 0x400    # a0 -> 0x400
+        vle8.v v1, (a0)        # v1 <- 8 bytes from data_bell.mem
+                               # (the target qubits for the H layer)
+        addi  a1, a0, 8
+        vle8.v v2, (a1)        # v2 <- 8 bytes (the partner qubits
+                               # for the CX layer)
+
+    Looking at `data_bell.mem`:
+        @00000400
+        06040200    -> v1 byte0..3 = 0x00, 0x02, 0x04, 0x06
+        0E0C0A08    -> v1 byte4..7 = 0x08, 0x0A, 0x0C, 0x0E
+        07050301    -> v2 byte0..3 = 0x01, 0x03, 0x05, 0x07
+        0F0D0B09    -> v2 byte4..7 = 0x09, 0x0B, 0x0D, 0x0F
+
+    These are the even-indexed qubits (v1) and odd-indexed qubits
+    (v2) for the 8 Bell pairs.
+
+So in our test case, `instruction_bell.mem` alone is not enough because 
+it contains only the program; the qubit-index payload that the program 
+loads lives in a separate region. Both files are `$readmemh`-ed into the
+same `mem` array in the testbench, just at different offsets. The
+Ibex then fetches code at 0x0 and the vector loads pull operands
+from 0x400.
+
+But to be clear, **`data_bell.mem` is not strictly
+necessary** -- it is purely a packaging / convenience choice:
+
+  - We could **merge** it into `instruction_bell.mem` by placing the
+    `@00000000` (text) and `@00000400` (data) segments back-to-back
+    in a single .mem file. `$readmemh` honours embedded `@<addr>`
+    directives, so one file can describe both regions.
+
+  - We could **eliminate the data segment entirely** and have the
+    program *synthesise* the qubit-ID buffer at runtime using a
+    sequence of scalar `li` + `sb` (or `lui` + word stores) into
+    SRAM, followed by the same `vle8.v`. The qubit IDs would then
+    live as immediates inside `.text` rather than as a static data
+    blob -- bigger code, no .data, but functionally equivalent.
+
+  - We can also directly change the qubit list easily without touching 
+    the instruction program.
+
+For larger benchmarks (the 12 MQT Bench circuits) we already emit
+both files from the same compiler invocation, so the split is
+transparent to the user. If you prefer a single-file format we can
+trivially produce that too.
+
+
+----------------------------------------------------------------------
+Q11. Is there any hope that we can compile a single executable
+     which simulates the whole FPGA (not just a "bell-specific"
+     one)? So that we can input an arbitrary HiSEP-Q binary and
+     observe the signals sent to the AWG?
+----------------------------------------------------------------------
+the testbench is already generic in everything that
+matters -- the `bell` in its name (`vproc_qdisp_bell_tb`) is
+historical, not architectural.
+
+Looking at the testbench source (line 446 onward):
+
+    if (!$value$plusargs("INSTR_MEM_FILE=%s", instr_mem_file))
+        instr_mem_file = "instruction_bell.mem";
+    if (!$value$plusargs("DATA_MEM_FILE=%s", data_mem_file))
+        data_mem_file  = "data_bell.mem";
+
+The `instruction_bell.mem` / `data_bell.mem` names are only the
+*defaults*. `run_cosim.sh` already overrides them via plusargs:
+
+    --testplusarg "INSTR_MEM_FILE=${QC_DIR}/instruction_bell.mem"
+    --testplusarg "DATA_MEM_FILE=${QC_DIR}/data_bell.mem"
+
+So in practice you can already point this *exact* compiled
+simulation executable at any HiSEP-Q binary you produce -- no
+recompilation of the testbench is needed. We use this to
+sweep the 12 MQT Bench circuits as well through the same simulator binary
+(see `mqtbench_compile.py` and `run_mqtbench.sh` -- they all share
+one xelab build; only the .mem files change).
+
+The only "bell-specific" things still inside the testbench are:
+
+  (a) Default file names (`instruction_bell.mem`, `data_bell.mem`)
+      -- harmless, overridden by plusargs.
+  (b) Some `$display` lines that print "Bell co-simulation started"
+      -- cosmetic.
+  (c) The module name (`vproc_qdisp_bell_tb`) -- cosmetic, but it
+      misleads readers. We will rename it to something neutral such
+      as `vproc_qdisp_generic_tb` in the next push.
+
+What the testbench observes and exposes is fully generic:
+
+  - Per-qubit AWG fire events (`t_cnt`, `qubit_id`, `gate_id`,
+    `elem2`, `elem3`) are dumped to `xsim.log` for every quantum
+    instruction the program executes.
+  - The halt-resume protocol (`qvsg_meas`, `measure_done`) works
+    the same regardless of which program is loaded.
+
+So **yes**, today you can already feed an arbitrary HiSEP-Q binary
+and observe AWG-bound signals. We will ship small cleanups in
+the next commit to make this story even cleaner:
+
+
+----------------------------------------------------------------------
+Q12. `qv.resume` related question 
+
+The hardware halt-resume is fully self-contained: `qv.meas` asserts `qvsg_meas`, 
+`measure_done` from the ADC clears it, and Ibex resumes fetching automatically.
+
+`qv.resume` is a **separate, application-level** instruction that
+runs *after* the halt has been cleared. Its job is to re-establish
+a clean per-qubit AWG state for any post-measurement quantum
+operations:
+
+  - Reset the per-qubit `t_cnt` so the AWG knows when the
+    post-measurement timeline begins (the halt window length is
+    unpredictable, so the AWG cannot infer this on its own).
+  - Drain residual entries from the per-qubit FIFOs that may have
+    been left behind by the pre-halt program.
+
+In short: hardware decides "is the core running"; `qv.resume`
+decides "from when does the AWG resume firing".
+
+**`qv.resume` is not strictly required.** When safe to omit:
+
+  - If the measurement is the last quantum step of the program
+    (as in the Bell demo, which ends with `jal x0, 0`), you can
+    drop `qv.resume` entirely -- it is there only to exercise the
+    resume path for verification.
+  - If you continue with quantum gates after the measurement, you
+    currently need `qv.resume` (or equivalent manual `block_imm`
+    timing setup) to avoid stale per-qubit timing.
+
+We maybe able to optimize this instruction in the upcomming version,
+but for now we keep this to make the verification flow work properly.
