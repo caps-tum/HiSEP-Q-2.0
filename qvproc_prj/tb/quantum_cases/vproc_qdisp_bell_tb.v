@@ -90,6 +90,11 @@ module vproc_qdisp_bell_tb;
                 32'hCC208657: bell_instr_name = "QV.PAIR(CNOT) vd3, v1, v2  ";
                 32'hD0708657: bell_instr_name = "QSG.MEASURE vd3, v1, x7    ";
                 32'hF0610657: bell_instr_name = "QV.SINGLE(resume) vd6, v2, x6";
+                // custom-0 (0x0B) encodings (RFC #3 migration)
+                32'hC870860B: bell_instr_name = "QV.SINGLE(H) [cust0]       ";
+                32'hCC20960B: bell_instr_name = "QV.PAIR(CNOT) [cust0]      ";
+                32'hD070860B: bell_instr_name = "QSG.MEASURE [cust0]        ";
+                32'hF061060B: bell_instr_name = "QV.SINGLE(resume) [cust0]  ";
                 32'h0000006F: bell_instr_name = "jal x0, 0                  ";
                 default:      bell_instr_name = "unknown                    ";
             endcase

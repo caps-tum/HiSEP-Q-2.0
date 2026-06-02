@@ -39,8 +39,9 @@ module quantum_dispatcher #(
     // Width of the gate word stored per qubit = GateID width (elem3[31:25]).
     parameter GATE_WIDTH  = 7,
 
-    // Width of Block_imm timing field (elem3[10:7]).
-    parameter BLOCK_IMM_W = 4,
+    // Width of Block_imm timing field (elem3[11:7]).
+    // 5-bit since the mask bit was removed (RFC #3 / custom-0 migration).
+    parameter BLOCK_IMM_W = 5,
 
     // Fixed latency (in t_cnt ticks) used when Block_imm == 0.
     // Must be large enough that the timed_fifo write completes before
@@ -94,7 +95,7 @@ module quantum_dispatcher #(
     // Field extraction
     // ------------------------------------------------------------------ //
     wire [GATE_WIDTH-1:0]  gate_id   = quantum_elem3[31:25];
-    wire [BLOCK_IMM_W-1:0] block_imm = quantum_elem3[10:7];
+    wire [BLOCK_IMM_W-1:0] block_imm = quantum_elem3[7 +: BLOCK_IMM_W];  // [11:7]
     wire [7:0]             tgt_qubit = quantum_elem1[7:0];
     wire [7:0]             src_qubit = quantum_elem2[7:0];  // valid for QV.PAIR only
 

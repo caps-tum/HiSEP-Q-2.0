@@ -12,9 +12,17 @@ intermediate-scale quantum processors. By decoupling physical qubit addressing f
 stream using vector registers, this ISA supports high code density, scalable qubit parallelism, and
 mixed-precision rotation operations.
 
-All four quantum vector instructions share the standard RVV major opcode `1010111` (OP-V) and are
+All four quantum instructions use the RISC-V **custom-0** major opcode `0001011` and are
 decoded by the vector co-processor (qvproc) through the CORE-V XIF interface. Classical control
 flow and scalar operations remain on the Ibex scalar core using standard RISC-V instructions.
+Vector configuration and memory access (`vsetvli`, `vle8.v`, `vle32.v`) still use the standard
+RVV encodings — only the quantum gate instructions live in the custom opcode.
+
+> **Migration note (RFC #3):** earlier revisions of this ISA squatted in the RVV `OP-V` opcode
+> `1010111`, distinguishing the quantum instructions via unused `funct6`/`funct3` code points.
+> To avoid collisions with future standard vector extensions and to obtain a private, contiguous
+> encoding space, the quantum instructions were moved to the `custom-0` opcode. The legacy
+> `OP-V` encodings are still accepted by the current RTL during the transition (dual-decode).
 
 ---
 
@@ -35,21 +43,25 @@ The **MSB (bit 7)** of each element is currently unused and should be written as
 
 ### 2.2 Block Immediate Field
 
-The `Block_imm` field (instruction bits `[11:7]`) is a **4-bit scheduling/metadata field**.
-In the current implementation it is exported as part of `elem3` and is used by the programmer
-to carry a software-defined tag (e.g., a timestamp, circuit layer ID, or measurement token)
-to the quantum backend. It does **not** perform address translation in the current RTL.
+The `Block_imm` field (instruction bits `[11:7]`) is a **5-bit scheduling/metadata field**
+occupying the R-type `rd` slot (quantum instructions do not write back to a `rd` register).
+It is exported as part of `elem3` and is used by the programmer to carry a software-defined tag
+(e.g., a timestamp, circuit layer ID, or measurement token) to the quantum backend, and to
+compute the per-qubit dispatch time. It does **not** perform address translation in the current RTL.
 
 ```
-elem3[10:7] = Block_imm[3:0]
+elem3[11:7] = Block_imm[4:0]
 ```
+
+> **Note:** the standalone mask bit `m` that previously occupied bit `[11]` has been removed;
+> the full `[11:7]` field is now a single 5-bit immediate (RFC #3 / custom-0 migration).
 
 > **[TODO]** A hierarchical addressing extension is planned:
 > ```
 > Physical Qubit ID = (Block_imm × 128) + Vector Element[6:0]
 > ```
 > This would allow a single instruction to address up to 128 qubits within a 128-qubit block,
-> and the 4-bit `Block_imm` would select among up to 16 blocks (2048 qubits total).
+> and the 5-bit `Block_imm` would select among up to 32 blocks (4096 qubits total).
 > The MSB (bit 7) of each vector element would then be reserved for masking or validity.
 
 ---
@@ -95,8 +107,16 @@ Standard RVV instructions are used without modification:
 
 ### 4.3 Quantum Vector Extension
 
-All four quantum instructions use opcode `1010111` (OP-V). The `funct3` field distinguishes
-the instruction class. The `funct7` / `GateID` field identifies the gate type within each class.
+All four quantum instructions use the **custom-0** opcode `0001011`. The `funct3` field
+distinguishes the instruction class (`000`=QV.SINGLE, `001`=QV.PAIR, `010`=QV.ROT.G,
+`011`=QV.ROT.V). The `funct7` / `GateID` field identifies the gate type within each class.
+
+| `funct3` | Class       | `funct7` usage                 |
+|----------|-------------|--------------------------------|
+| `000`    | `QV.SINGLE` | GateID (H=`0x64`, MEASURE=`0x68`, resume=`0x78`) |
+| `001`    | `QV.PAIR`   | GateID (CNOT=`0x66`)           |
+| `010`    | `QV.ROT.G`  | reserved (`0`)                 |
+| `011`    | `QV.ROT.V`  | reserved (`0`)                 |
 
 ---
 
@@ -108,14 +128,14 @@ is forwarded to the quantum backend on the `elem2` channel (e.g., as a software 
 ```
  31      25   24    20   19    15   14  12   11     7   6       0
 +---------+----------+----------+--------+----------+---------+
-|  GateID |   rs2    |  vs1 (S) | 000(S) | Block_imm | 1010111 |
+|  GateID |   rs2    |  vs1 (S) | 000(S) | Block_imm | 0001011 |
 +---------+----------+----------+--------+----------+---------+
 ```
 
 **Exported signals per active element:**
 - `elem1` — 8-bit qubit index from `vs1`
 - `elem2` — 32-bit scalar from `rs2`
-- `elem3[31:25]` — GateID; `elem3[10:7]` — Block_imm; `elem3[11]` — mask bit `m`
+- `elem3[31:25]` — GateID; `elem3[11:7]` — Block_imm (5-bit)
 
 <!-- **Implemented GateIDs:**
 
@@ -129,8 +149,10 @@ is forwarded to the quantum backend on the `elem2` channel (e.g., as a software 
 <!-- > `X` (`NOT`), `Y`, `Z`. The legacy placeholder funct6 space (`7'h78`/`7'h79`) is reserved -->
 <!-- > for exploratory use during development. -->
 
-> **[TODO]** Mask Mode (`m = 1`): `vs1` contains a dense bitmask where bit `j` targets qubit `j`.
-> Currently only Index Mode (`m = 0`) is implemented.
+> **[TODO]** Mask Mode: a future variant where `vs1` contains a dense bitmask (bit `j` targets
+> qubit `j`) rather than an index list. Currently only Index Mode is implemented. The dedicated
+> `m` mode bit at `[11]` was removed in the custom-0 migration; a future Mask Mode would need to
+> reclaim an encoding point (e.g., a `funct7` GateID range or a `funct3` value).
 
 ---
 
@@ -141,7 +163,7 @@ Applies a two-qubit gate to element-wise pairs from `vs2` (source/control) and `
 ```
  31      25   24    20   19    15   14  12   11     7   6       0
 +---------+----------+----------+--------+----------+---------+
-|  GateID | vs2(src) | vs1(tgt) | 001(P) | Block_imm | 1010111 |
+|  GateID | vs2(src) | vs1(tgt) | 001(P) | Block_imm | 0001011 |
 +---------+----------+----------+--------+----------+---------+
 ```
 
@@ -168,7 +190,7 @@ an **integer** scalar register `rs2`.
 ```
  31      25   24    20   19    15   14  12   11     7   6       0
 +---------+----------+----------+--------+----------+---------+
-|   Res   | rs2(ang) | vs1(tgt) | 010(gr)| Block_imm | 1010111 |
+|   Res   | rs2(ang) | vs1(tgt) | 010(gr)| Block_imm | 0001011 |
 +---------+----------+----------+--------+----------+---------+
 ```
 
@@ -201,7 +223,7 @@ This is a **mixed-width instruction**: `vs1` uses `SEW=8` (qubit indices) and `v
 ```
  31      25   24    20   19    15   14  12   11     7   6       0
 +---------+----------+----------+--------+----------+---------+
-|   Res   | vs2(ang) | vs1(tgt) | 011(vr)| Block_imm | 1010111 |
+|   Res   | vs2(ang) | vs1(tgt) | 011(vr)| Block_imm | 0001011 |
 +---------+----------+----------+--------+----------+---------+
 ```
 
@@ -463,7 +485,8 @@ jal     x0, 0
 
 - [ ] Assign fixed GateIDs for gates and implement decoder entries.
 <!-- - [ ] Implement `SWAP` gate in `QV.PAIR`. -->
-- [ ] Implement Mask Mode (`m=1`) for `QV.SINGLE`.
+- [ ] Implement Mask Mode for `QV.SINGLE` (needs a new encoding point; the old `m` bit at `[11]`
+      was reclaimed by the 5-bit `Block_imm` in the custom-0 migration).
 - [ ] Integrate hierarchical addressing: `Qidx = Block_imm × 128 + Vector Element[6:0]`
 - [ ] Implement measurement result readback from backend to GPR.
 - [ ] Enumerate all `QV.ROT.V` register-group conflict cases.

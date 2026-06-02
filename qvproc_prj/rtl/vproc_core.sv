@@ -373,7 +373,7 @@ module vproc_core import vproc_pkg::*; #(
     assign dec_data_d.lmul       = lmul_q; // quantum qvproc
     assign dec_data_d.quantum_elem2_raw = 32'b0; // quantum qvproc
     assign dec_data_d.quantum_elem3_raw = ((instr_unit == UNIT_ELEM) && (instr_mode.elem.op == ELEM_QSINGLE)) ?
-                                          {xif_issue_if.issue_req.instr[31:25], 13'b0000000000000, xif_issue_if.issue_req.instr[11], xif_issue_if.issue_req.instr[10:7], 7'b0000000} :
+                                          {xif_issue_if.issue_req.instr[31:25], 13'b0000000000000, xif_issue_if.issue_req.instr[11:7], 7'b0000000} :
                                           (((instr_unit == UNIT_ELEM) && ((instr_mode.elem.op == ELEM_QPAIR) || (instr_mode.elem.op == ELEM_QROTG) || (instr_mode.elem.op == ELEM_QROTV))) ?
                                           {17'b00000000000000000, xif_issue_if.issue_req.instr[14:7], 7'b0000000} : 32'b0); // quantum qvproc
     assign dec_data_d.unit       = instr_unit;

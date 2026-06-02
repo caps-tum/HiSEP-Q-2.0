@@ -1586,6 +1586,74 @@ module vproc_decoder #(
 
             end
 
+            // OPCODE CUSTOM-0 (7'h0b): HiSEP-Q quantum instructions.
+            // Migrated out of OP-V per RFC #3 so the quantum ISA no longer squats
+            // in the standard vector encoding space.  funct3 (instr[14:12]) selects
+            // the instruction class; funct7 (instr[31:25]) carries the GateID for
+            // QV.SINGLE / QV.PAIR.  block_imm = instr[11:7] (5-bit, mask bit removed).
+            // Operands reuse the current vtype (vsew/lmul) set by a preceding vsetvli.
+            7'h0b: begin
+                // quantum ops do not write back to a vector register
+                rd_o.vreg = 1'b0;
+                rd_o.addr = instr_vd;
+                unique case (instr_i[14:12])   // funct3 = instruction class
+                    3'b000: begin              // QV.SINGLE (funct7 = GateID)
+                        unit_o             = UNIT_ELEM;
+                        mode_o.elem.op     = ELEM_QSINGLE;
+                        mode_o.elem.xreg   = 1'b0;
+                        // GateID occupies instr[31:25]; do not reinterpret as a v0 mask.
+                        mode_o.elem.masked = 1'b0;
+                        rs2_o.vreg         = 1'b1;       // vs1 -> elem1 (qubit indices)
+                        rs2_o.r.vaddr      = instr_vs1;
+                        rs1_o.vreg         = 1'b0;
+                        rs1_o.xreg         = 1'b1;       // rs2 scalar tag -> elem2
+                        rs1_o.r.xval       = x_rs2_i;
+                    end
+                    3'b001: begin              // QV.PAIR (funct7 = GateID)
+                        unit_o             = UNIT_ELEM;
+                        mode_o.elem.op     = ELEM_QPAIR;
+                        mode_o.elem.xreg   = 1'b0;
+                        mode_o.elem.masked = 1'b0;
+                        rs2_o.vreg         = 1'b1;       // vs1 (target) -> elem1
+                        rs2_o.r.vaddr      = instr_vs1;
+                        rs1_o.vreg         = 1'b1;       // vs2 (source) -> elem2
+                        rs1_o.xreg         = 1'b0;
+                        rs1_o.r.vaddr      = instr_vs2;
+                    end
+                    3'b010: begin              // QV.ROT.G (scalar angle from rs2)
+                        unit_o             = UNIT_ELEM;
+                        mode_o.elem.op     = ELEM_QROTG;
+                        mode_o.elem.xreg   = 1'b0;
+                        mode_o.elem.masked = instr_masked;
+                        rs2_o.vreg         = 1'b1;
+                        rs2_o.r.vaddr      = instr_vs1;
+                        rs1_o.vreg         = 1'b0;
+                        rs1_o.xreg         = 1'b1;
+                        rs1_o.r.xval       = x_rs2_i;
+                    end
+                    3'b011: begin              // QV.ROT.V (per-element angle from vs2)
+                        unit_o             = UNIT_ELEM;
+                        mode_o.elem.op     = ELEM_QROTV;
+                        mode_o.elem.xreg   = 1'b0;
+                        mode_o.elem.masked = instr_masked;
+                        rs2_o.vreg         = 1'b1;
+                        rs2_o.r.vaddr      = instr_vs1;
+                        rs1_o.vreg         = 1'b1;
+                        rs1_o.xreg         = 1'b0;
+                        rs1_o.r.vaddr      = instr_vs2;
+                        // Mixed-width: vs1 is 8-bit indices, vs2 is 32-bit angles.
+                        // Only mf2/m1/m2 on the index side are physically realizable.
+                        unique case (lmul_i)
+                            LMUL_F2,
+                            LMUL_1 ,
+                            LMUL_2 : ;
+                            default: instr_illegal = 1'b1;
+                        endcase
+                    end
+                    default: instr_illegal = 1'b1;
+                endcase
+            end
+
             default: begin
                 instr_illegal = 1'b1;
             end

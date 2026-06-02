@@ -27,7 +27,7 @@ module vproc_qdisp_top
     parameter FIFO_DEPTH    = 8,
     parameter TIME_WIDTH    = 20,
     parameter GATE_WIDTH    = 7,
-    parameter BLOCK_IMM_W   = 4,
+    parameter BLOCK_IMM_W   = 5,
     // FIXED_LATENCY must be > VL_MAX + 1.
     // Bell program uses VL=8, so 16 gives ample headroom.
     parameter FIXED_LATENCY = 16

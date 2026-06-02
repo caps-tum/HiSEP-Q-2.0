@@ -97,6 +97,7 @@ module vproc_top import vproc_pkg::*; #(
     localparam X_RFW_WIDTH = 32;
     localparam X_MISA = 0;
     localparam logic [6:0] OP_V_OPCODE          = 7'h57;
+    localparam logic [6:0] CUSTOM0_OPCODE       = 7'h0b;  // HiSEP-Q quantum ISA (RFC #3)
     localparam logic [2:0] QV_SINGLE_FUNCT3     = 3'b000;
     localparam logic [6:0] QSG_MEASURE_GATE_ID  = 7'h68;
     vproc_xif #(
@@ -186,8 +187,10 @@ module vproc_top import vproc_pkg::*; #(
         .DmExceptionAddr        ( 32'h00000000                       ),
         .RV32M                  ( ibex_pkg::RV32MFast                ),
         .ExternalCSRs           ( VECT_CSR_CNT                       ),
-        // LOAD-FP, STORE-FP and VECTOR opcodes
-        .CoprocOpcodes          ( 32'h00200202                       )
+        // LOAD-FP (0x07), STORE-FP (0x27), VECTOR/OP-V (0x57) and
+        // CUSTOM-0 (0x0B, HiSEP-Q quantum ISA per RFC #3) opcodes.
+        // Bitmask indexed by inst[6:2]: bit1=0x07, bit2=0x0B, bit9=0x27, bit21=0x57.
+        .CoprocOpcodes          ( 32'h00200206                       )
     ) u_core (
         .clk_i                  ( clk_i                              ),
         .rst_ni                 ( rst_ni                             ),
@@ -295,7 +298,7 @@ module vproc_top import vproc_pkg::*; #(
     assign ibex_fetch_enable            = ~measure_active_q;
 
     assign qsg_measure_issue = cpi_instr_valid & cpi_instr_gnt & vcore_xif.issue_resp.accept &
-                               (cpi_instr[6:0] == OP_V_OPCODE) &
+                               ((cpi_instr[6:0] == OP_V_OPCODE) | (cpi_instr[6:0] == CUSTOM0_OPCODE)) &
                                (cpi_instr[14:12] == QV_SINGLE_FUNCT3) &
                                (cpi_instr[31:25] == QSG_MEASURE_GATE_ID);
 
