@@ -1447,6 +1447,17 @@ module vproc_decoder #(
                         end
 
 
+                        // ============================================================
+                        // LEGACY (_old) — OP-V quantum decode. DEPRECATED per RFC #3.
+                        // ------------------------------------------------------------
+                        // HiSEPQ quantum instructions were originally squatted in the
+                        // RVV OP-V opcode using unused funct6/funct3 code points (below).
+                        // They have since moved to the custom-0 opcode (7'h0b, see the
+                        // dedicated case after the OP-V block). This OP-V path is kept
+                        // only for transition/back-compat (dual-decode) and is no longer
+                        // exercised by any program in demo/ — all .mem were re-encoded to
+                        // custom-0. Slated for removal once RFC #3 is formally accepted.
+                        // ============================================================
                         // HiSEPQ custom quantum instructions (OP-V / custom funct6 space).
                         // The chosen funct6 values avoid overlap with existing RVV decode keys.
                         {6'b111100, 3'b000}: begin  // Legacy QV.SINGLE placeholder space (e.g. 0x78/0x79)
