@@ -53,6 +53,7 @@ module vproc_qdisp_bell_tb;
     integer cycle_count;
     integer quantum_event_idx;
     integer last_quantum_event_cycle;
+    integer idle_count;             // cycles since the last quantum event
     integer resume_event_count;
     integer qubit_fire_count;
     integer fail_count;
@@ -239,6 +240,11 @@ module vproc_qdisp_bell_tb;
     always @(posedge clk) begin
         cycle_count = cycle_count + 1;
 
+        // Idle timer: clear it on each quantum beat, otherwise count up. Kept in
+        // this block (next to cycle_count) so Verilator propagates it properly.
+        if (quantum_valid) idle_count = 0;
+        else               idle_count = idle_count + 1;
+
         if (mem_req && mem_we && (mem_idx >= 0) && (mem_idx < MEM_WORDS)) begin
             for (i = 0; i < (MEM_W/8); i = i + 1) begin
                 if (mem_be[i])
@@ -424,6 +430,7 @@ module vproc_qdisp_bell_tb;
         cycle_count                 = 0;
         quantum_event_idx           = 0;
         last_quantum_event_cycle    = -1;
+        idle_count                  = 0;
         qubit_fire_count            = 0;
         fail_count                  = 0;
         resume_event_count          = 0;
@@ -483,11 +490,13 @@ module vproc_qdisp_bell_tb;
         for (i = 0; i < MAX_CYCLES; i = i + 1) begin
             @(posedge clk);
 
-            // Termination condition: prefer idle-after-last-event so that
-            // any AWG fires queued behind the resume marker are not cut off.
-            // For programs without MEASURE / resume, this is the only path.
-            if ((last_quantum_event_cycle >= 0) &&
-                ((cycle_count - last_quantum_event_cycle) >= POST_EVENT_IDLE_CYCLES)) begin
+            // Stop after we've been idle for a while past the last event (gives
+            // the AWG fires behind the resume marker time to drain).
+            // Using idle_count here instead of (cycle_count - last_quantum_event_cycle):
+            // the cross-block write to last_quantum_event_cycle wasn't visible here
+            // under Verilator, so that version never triggered. idle_count works in xsim too.
+            if ((quantum_event_idx > 0) &&
+                (idle_count >= POST_EVENT_IDLE_CYCLES)) begin
                 if (resume_stream_seen) begin
                     $display("[QDISP_TB][cycle=%0d][DONE] resume stream complete (%0d events) + %0d idle",
                              cycle_count, resume_event_count, POST_EVENT_IDLE_CYCLES);

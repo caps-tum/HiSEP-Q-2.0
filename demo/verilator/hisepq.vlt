@@ -1,0 +1,38 @@
+// Lint waivers for the Verilator build.
+//
+// The tool is much stricter than xsim, so the Ibex/Vicuna RTL throws a lot of
+// width/style warnings. We turn those off here - correctness is checked by
+// comparing the log against xsim, not by the linter.
+//
+// (Heads up: a comment line here must not start with the tool's own name, or it
+// gets parsed as a pragma.)
+`verilator_config
+
+// width / truncation
+lint_off -rule WIDTH
+lint_off -rule WIDTHCONCAT
+lint_off -rule WIDTHTRUNC
+lint_off -rule WIDTHEXPAND
+
+// comb loops / scheduling style
+lint_off -rule UNOPTFLAT
+lint_off -rule BLKANDNBLK
+lint_off -rule MULTIDRIVEN
+
+// incomplete case / unused / undriven
+lint_off -rule CASEINCOMPLETE
+lint_off -rule CASEOVERLAP
+lint_off -rule UNUSEDSIGNAL
+lint_off -rule UNUSEDPARAM
+lint_off -rule UNDRIVEN
+lint_off -rule UNSIGNED
+lint_off -rule CMPCONST
+
+// structural / naming
+lint_off -rule PINMISSING
+lint_off -rule PINCONNECTEMPTY
+lint_off -rule IMPLICIT
+lint_off -rule SYMRSVDWORD
+lint_off -rule SELRANGE
+lint_off -rule ASCRANGE
+lint_off -rule LATCH
