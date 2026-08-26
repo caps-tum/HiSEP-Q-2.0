@@ -1,7 +1,0 @@
-Running: xsim.dir/vproc_qdisp_bell_tb_sim/xsimk -runall -simmode gui -testplusarg MEM_FILE=/u/home/guxi/Documents/QVCP/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/cosim/cases/bell_8pair.mem -wdb vproc_qdisp_bell_tb_sim.wdb -simrunnum 0 -socket 38655
-Design successfully loaded
-Design Loading Memory Usage: 182908 KB (Peak: 182908 KB)
-Design Loading CPU Usage: 680 ms
-Simulation completed
-Simulation Memory Usage: 273312 KB (Peak: 326484 KB)
-Simulation CPU Usage: 710 ms
