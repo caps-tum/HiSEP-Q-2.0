@@ -1,7 +1,0 @@
-Running: xsim.dir/vproc_bell_tb_behav/xsimk -simmode gui -testplusarg INSTR_MEM_FILE=/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/instruction_bell.mem -testplusarg DATA_MEM_FILE=/u/home/qink/Desktop/caps_hisep_q_2/HiSEP-Q-2.0/qvproc_prj/tb/quantum_cases/data_bell.mem -wdb vproc_bell_tb_behav.wdb -simrunnum 0 -socket 47175
-Design successfully loaded
-Design Loading Memory Usage: 182756 KB (Peak: 182764 KB)
-Design Loading CPU Usage: 940 ms
-Simulation completed
-Simulation Memory Usage: 269764 KB (Peak: 322024 KB)
-Simulation CPU Usage: 1040 ms
