@@ -1,159 +1,127 @@
 `timescale 1ns / 1ps
-//
-// quantum_dispatcher_tb.v
-//
-// Verifies three core properties of quantum_dispatcher (TIMED mode):
-//
-//  Case 1 – QV.SINGLE, block_imm=0, qubits [2,5]
-//    All qubits in the same instruction must fire at the SAME t_cnt
-//    (= base_time + FIXED_LATENCY), even though they arrive in
-//    consecutive cycles from the vector core.
-//
-//  Case 2 – QV.SINGLE, block_imm=6, qubits [0,3]
-//    All qubits fire at base_time + block_imm.
-//
-//  Case 3 – QV.PAIR, block_imm=0, tgt=qubit1, src=qubit4
-//    Both the target and the source qubit fire at the same t_cnt.
-//
-// Checking strategy:
-//   All pass/fail checks run inside the initial block.  After
-//   @(posedge clk) resumes, all NBA updates and combinational
-//   delta cycles for that timestep have settled, so qubit_valid_o
-//   and qubit_gate_o are stable and correct to sample.
 
+// Directed specification test for quantum_dispatcher error semantics.
 module quantum_dispatcher_tb;
-
-    // --------------------------------------------------------------------- //
-    // Parameters – must match DUT instantiation below
-    // --------------------------------------------------------------------- //
     parameter NUM_QUBITS    = 8;
-    parameter FIFO_DEPTH    = 4;
+    parameter FIFO_DEPTH    = 2;
     parameter TIME_WIDTH    = 12;
     parameter GATE_WIDTH    = 7;
-    parameter BLOCK_IMM_W   = 4;
-    parameter FIXED_LATENCY = 8;    // must be > max_vl + 1; max_vl=2 here
+    parameter BLOCK_IMM_W   = 5;
+    parameter FIXED_LATENCY = 100;
 
-    parameter ELEM_QSINGLE  = 5'd16;
-    parameter ELEM_QPAIR    = 5'd17;
+    localparam ELEM_QSINGLE = 5'd16;
+    localparam ELEM_QPAIR   = 5'd17;
 
-    // --------------------------------------------------------------------- //
-    // DUT signals
-    // --------------------------------------------------------------------- //
-    reg                          clk;
-    reg                          reset;
-    reg  [TIME_WIDTH-1:0]        t_cnt;
+    reg clk;
+    reg reset;
+    reg [TIME_WIDTH-1:0] t_cnt;
+    reg quantum_valid;
+    reg [4:0] quantum_op;
+    reg [2:0] quantum_instr_id;
+    reg [31:0] quantum_elem1;
+    reg [31:0] quantum_elem2;
+    reg [31:0] quantum_elem3;
+    reg quantum_data_ready;
+    reg quantum_first_cycle;
+    reg quantum_last_cycle;
 
-    reg                          quantum_valid;
-    reg  [4:0]                   quantum_op;
-    reg  [31:0]                  quantum_elem1;
-    reg  [31:0]                  quantum_elem2;
-    reg  [31:0]                  quantum_elem3;
-    reg                          quantum_data_ready;
-    reg                          quantum_first_cycle;
-    reg                          quantum_last_cycle;
+    wire [GATE_WIDTH*NUM_QUBITS-1:0] qubit_gate;
+    wire [NUM_QUBITS-1:0] qubit_valid;
+    wire [NUM_QUBITS-1:0] qubit_error;
+    wire [NUM_QUBITS-1:0] qubit_ctrl;
+    wire invalid_index_error;
+    wire invalid_pair_error;
+    wire illegal_error;
 
-    wire [GATE_WIDTH*NUM_QUBITS-1:0] qubit_gate_o;
-    wire [NUM_QUBITS-1:0]            qubit_valid_o;
-    wire [NUM_QUBITS-1:0]            qubit_error_o;
+    integer invalid_index_count;
+    integer invalid_pair_count;
+    integer overflow_count;
+    integer illegal_count;
+    integer fire_count;
+    integer fire_per_q [0:NUM_QUBITS-1];
+    reg [TIME_WIDTH-1:0] last_fire_time [0:NUM_QUBITS-1];
+    integer failures;
+    integer checks;
+    integer i;
 
-    // --------------------------------------------------------------------- //
-    // Clock
-    // --------------------------------------------------------------------- //
-    initial clk = 0;
-    always  #5 clk = ~clk;
+    initial clk = 1'b0;
+    always #5 clk = ~clk;
 
-    // --------------------------------------------------------------------- //
-    // DUT
-    // --------------------------------------------------------------------- //
+    always @(posedge clk) begin
+        if (reset)
+            t_cnt <= {TIME_WIDTH{1'b0}};
+        else
+            t_cnt <= t_cnt + 1'b1;
+    end
+
     quantum_dispatcher #(
-        .NUM_QUBITS    (NUM_QUBITS),
-        .FIFO_DEPTH    (FIFO_DEPTH),
-        .TIME_WIDTH    (TIME_WIDTH),
-        .GATE_WIDTH    (GATE_WIDTH),
-        .BLOCK_IMM_W   (BLOCK_IMM_W),
-        .FIXED_LATENCY (FIXED_LATENCY)
+        .NUM_QUBITS(NUM_QUBITS),
+        .FIFO_DEPTH(FIFO_DEPTH),
+        .TIME_WIDTH(TIME_WIDTH),
+        .GATE_WIDTH(GATE_WIDTH),
+        .BLOCK_IMM_W(BLOCK_IMM_W),
+        .FIXED_LATENCY(FIXED_LATENCY)
     ) dut (
-        .clk                (clk),
-        .reset              (reset),
-        .t_cnt              (t_cnt),
-        .quantum_valid      (quantum_valid),
-        .quantum_op         (quantum_op),
-        .quantum_elem1      (quantum_elem1),
-        .quantum_elem2      (quantum_elem2),
-        .quantum_elem3      (quantum_elem3),
-        .quantum_data_ready (quantum_data_ready),
+        .clk(clk),
+        .reset(reset),
+        .t_cnt(t_cnt),
+        .quantum_valid(quantum_valid),
+        .quantum_op(quantum_op),
+        .quantum_instr_id(quantum_instr_id),
+        .quantum_elem1(quantum_elem1),
+        .quantum_elem2(quantum_elem2),
+        .quantum_elem3(quantum_elem3),
+        .quantum_data_ready(quantum_data_ready),
         .quantum_first_cycle(quantum_first_cycle),
-        .quantum_last_cycle (quantum_last_cycle),
-        .qubit_gate_o       (qubit_gate_o),
-        .qubit_valid_o      (qubit_valid_o),
-        .qubit_error_o      (qubit_error_o)
+        .quantum_last_cycle(quantum_last_cycle),
+        .qubit_gate_o(qubit_gate),
+        .qubit_valid_o(qubit_valid),
+        .qubit_error_o(qubit_error),
+        .qubit_ctrl_o(qubit_ctrl),
+        .invalid_index_error_o(invalid_index_error),
+        .invalid_pair_error_o(invalid_pair_error),
+        .illegal_error_o(illegal_error)
     );
 
-    // --------------------------------------------------------------------- //
-    // Free-running t_cnt
-    // --------------------------------------------------------------------- //
     always @(posedge clk) begin
-        if (reset) t_cnt <= {TIME_WIDTH{1'b0}};
-        else       t_cnt <= t_cnt + 1'b1;
-    end
-
-    // --------------------------------------------------------------------- //
-    // Monitor: fires whenever any qubit output is active or an error occurs.
-    // This always block is informational only; pass/fail is in the initial block.
-    // --------------------------------------------------------------------- //
-    integer qi_mon;
-    always @(posedge clk) begin
-        if (|qubit_valid_o) begin
-            for (qi_mon = 0; qi_mon < NUM_QUBITS; qi_mon = qi_mon + 1) begin
-                if (qubit_valid_o[qi_mon])
-                    $display("[QDISP][t=%0d] qubit %0d fires  gate=0x%02x",
-                             t_cnt, qi_mon,
-                             qubit_gate_o[(qi_mon+1)*GATE_WIDTH-1 -: GATE_WIDTH]);
+        if (reset) begin
+            invalid_index_count = 0;
+            invalid_pair_count  = 0;
+            overflow_count      = 0;
+            illegal_count       = 0;
+            fire_count          = 0;
+            for (i = 0; i < NUM_QUBITS; i = i + 1) begin
+                fire_per_q[i]   = 0;
+                last_fire_time[i] = 0;
+            end
+        end else begin
+            if (invalid_index_error) invalid_index_count = invalid_index_count + 1;
+            if (invalid_pair_error)  invalid_pair_count  = invalid_pair_count + 1;
+            if (|qubit_error)        overflow_count      = overflow_count + 1;
+            if (illegal_error)       illegal_count       = illegal_count + 1;
+            for (i = 0; i < NUM_QUBITS; i = i + 1) begin
+                if (qubit_valid[i]) begin
+                    fire_count        = fire_count + 1;
+                    fire_per_q[i]     = fire_per_q[i] + 1;
+                    last_fire_time[i] = t_cnt;
+                end
             end
         end
-        if (|qubit_error_o)
-            $display("[QDISP][t=%0d][ERROR] FIFO overflow mask=%b",
-                     t_cnt, qubit_error_o);
     end
 
-    // --------------------------------------------------------------------- //
-    // Helper: build elem3  [31:25]=GateID  [10:7]=block_imm
-    // --------------------------------------------------------------------- //
     function [31:0] make_elem3;
-        input [6:0] gate;
-        input [3:0] blk;
+        input [GATE_WIDTH-1:0] gate;
+        input [BLOCK_IMM_W-1:0] block_imm;
         begin
-            make_elem3 = {gate, 14'b0, blk, 7'b0};
+            make_elem3 = {gate, 13'b0, block_imm, 7'b0};
         end
     endfunction
 
-    // --------------------------------------------------------------------- //
-    // Helper tasks
-    // --------------------------------------------------------------------- //
-    task drive_beat;
-        input [4:0] op;
-        input [7:0] tgt;
-        input [7:0] src;
-        input [6:0] gate;
-        input [3:0] blk;
-        input       is_first;
-        input       is_last;
-        begin
-            quantum_valid       = 1'b1;
-            quantum_op          = op;
-            quantum_elem1       = {24'b0, tgt};
-            quantum_elem2       = {24'b0, src};
-            quantum_elem3       = make_elem3(gate, blk);
-            quantum_data_ready  = 1'b1;
-            quantum_first_cycle = is_first;
-            quantum_last_cycle  = is_last;
-        end
-    endtask
-
-    task idle_quantum;
+    task idle_bus;
         begin
             quantum_valid       = 1'b0;
             quantum_op          = 5'b0;
+            quantum_instr_id    = 3'b0;
             quantum_elem1       = 32'b0;
             quantum_elem2       = 32'b0;
             quantum_elem3       = 32'b0;
@@ -163,140 +131,170 @@ module quantum_dispatcher_tb;
         end
     endtask
 
-    // Wait until t_cnt reaches 'target' (checked post-NBA after posedge)
-    task wait_until;
-        input [TIME_WIDTH-1:0] target;
+    task tick;
         begin
-            while (t_cnt < target) @(posedge clk);
-            // t_cnt == target, all NBA + combinational delta cycles done
+            @(posedge clk);
+            #1;
         end
     endtask
 
-    // Inline pass/fail check.
-    // Call AFTER wait_until(dispatch_time) so outputs have settled.
-    // 'label'  : string printed with result
-    // 'exp_mask': expected qubit_valid_o bitmask
-    // 'exp_gate': expected gate word for every asserted bit
-    integer qi_chk;
-    integer fail_count;
-    integer pass_count;
-    task check_outputs;
-        input [NUM_QUBITS-1:0] exp_mask;
-        input [GATE_WIDTH-1:0] exp_gate;
-        input [8*32-1:0]       label;
+    task wait_cycles;
+        input integer count;
+        integer n;
         begin
-            if (qubit_valid_o !== exp_mask) begin
-                $display("[FAIL][t=%0d] %0s  valid_o=%b  expected=%b",
-                         t_cnt, label, qubit_valid_o, exp_mask);
-                fail_count = fail_count + 1;
+            for (n = 0; n < count; n = n + 1)
+                tick;
+        end
+    endtask
+
+    task reset_case;
+        begin
+            reset = 1'b1;
+            idle_bus;
+            wait_cycles(3);
+            reset = 1'b0;
+            tick;
+        end
+    endtask
+
+    task put_beat;
+        input [2:0] id;
+        input [4:0] op;
+        input [7:0] tgt;
+        input [7:0] src;
+        input [GATE_WIDTH-1:0] gate;
+        input [BLOCK_IMM_W-1:0] block_imm;
+        begin
+            quantum_valid       = 1'b1;
+            quantum_op          = op;
+            quantum_instr_id    = id;
+            quantum_elem1       = {24'b0, tgt};
+            quantum_elem2       = {24'b0, src};
+            quantum_elem3       = make_elem3(gate, block_imm);
+            quantum_data_ready  = 1'b1;
+            quantum_first_cycle = 1'b1;
+            quantum_last_cycle  = 1'b1;
+            tick;
+        end
+    endtask
+
+    task check_equal;
+        input integer actual;
+        input integer expected;
+        input [8*64-1:0] label_text;
+        begin
+            checks = checks + 1;
+            if (actual != expected) begin
+                failures = failures + 1;
+                $display("[FAIL] %0s: actual=%0d expected=%0d", label_text, actual, expected);
             end else begin
-                for (qi_chk = 0; qi_chk < NUM_QUBITS; qi_chk = qi_chk + 1) begin
-                    if (exp_mask[qi_chk]) begin
-                        if (qubit_gate_o[(qi_chk+1)*GATE_WIDTH-1 -: GATE_WIDTH] !== exp_gate) begin
-                            $display("[FAIL][t=%0d] %0s  qubit %0d gate=0x%02x expected=0x%02x",
-                                     t_cnt, label, qi_chk,
-                                     qubit_gate_o[(qi_chk+1)*GATE_WIDTH-1 -: GATE_WIDTH],
-                                     exp_gate);
-                            fail_count = fail_count + 1;
-                        end else begin
-                            $display("[PASS][t=%0d] %0s  qubit %0d gate=0x%02x OK",
-                                     t_cnt, label, qi_chk, exp_gate);
-                            pass_count = pass_count + 1;
-                        end
-                    end
-                end
+                $display("[PASS] %0s: %0d", label_text, actual);
             end
         end
     endtask
 
-    // --------------------------------------------------------------------- //
-    // Stimulus and checking
-    // --------------------------------------------------------------------- //
-    reg [TIME_WIDTH-1:0] base;
-
     initial begin
-        fail_count          = 0;
-        pass_count          = 0;
-        reset               = 1'b1;
-        idle_quantum;
+        failures = 0;
+        checks   = 0;
+        reset    = 1'b1;
+        t_cnt    = 0;
+        idle_bus;
 
-        repeat (5) @(posedge clk);
-        #1; reset = 1'b0;
+        // Valid synchronized burst: distinct qubits in one instruction.
+        reset_case;
+        put_beat(3'd0, ELEM_QSINGLE, 8'd1, 0, 7'h11, 5'd12);
+        quantum_first_cycle = 1'b0;
+        put_beat(3'd0, ELEM_QSINGLE, 8'd3, 0, 7'h11, 5'd12);
+        idle_bus;
+        wait_cycles(30);
+        check_equal(fire_per_q[1], 1, "valid burst q1 fires once");
+        check_equal(fire_per_q[3], 1, "valid burst q3 fires once");
+        check_equal(last_fire_time[1], last_fire_time[3], "valid burst is synchronous");
+        check_equal(illegal_count, 0, "valid burst has no illegal");
 
-        // ================================================================= //
-        // Case 1 – QV.SINGLE, block_imm=0, qubits [2,5], gate=0x10
-        //   dispatch_time = base + FIXED_LATENCY
-        //   Both qubits must fire on the same t_cnt cycle
-        // ================================================================= //
-        wait_until(10); #1;
-        base = t_cnt;
-        $display("[TB] --- Case 1: QV.SINGLE qubits=[2,5] gate=0x10 block_imm=0 ---");
-        $display("[TB]   base=%0d  dispatch_time=%0d", base, base+FIXED_LATENCY);
+        // Non-pair out-of-range index: one invalid-index pulse, no write.
+        reset_case;
+        put_beat(3'd0, ELEM_QSINGLE, 8'd8, 0, 7'h12, 5'd10);
+        idle_bus;
+        wait_cycles(25);
+        check_equal(invalid_index_count, 1, "single OOB invalid-index pulse");
+        check_equal(invalid_pair_count, 0, "single OOB is not invalid-pair");
+        check_equal(fire_count, 0, "single OOB writes no FIFO");
 
-        drive_beat(ELEM_QSINGLE, 8'd2, 8'd0, 7'h10, 4'h0, 1'b1, 1'b0);
-        @(posedge clk); #1;
-        drive_beat(ELEM_QSINGLE, 8'd5, 8'd0, 7'h10, 4'h0, 1'b0, 1'b1);
-        @(posedge clk); #1;
-        idle_quantum;
+        // Either pair endpoint OOB: each beat rejected atomically.
+        reset_case;
+        put_beat(3'd0, ELEM_QPAIR, 8'd8, 8'd2, 7'h20, 5'd10);
+        put_beat(3'd0, ELEM_QPAIR, 8'd1, 8'd9, 7'h20, 5'd10);
+        idle_bus;
+        wait_cycles(25);
+        check_equal(invalid_pair_count, 2, "pair OOB pulses once per bad beat");
+        check_equal(invalid_index_count, 0, "pair OOB not double-counted as invalid-index");
+        check_equal(fire_count, 0, "pair OOB writes neither endpoint");
 
-        // Wait for the exact fire cycle and check
-        wait_until(base + FIXED_LATENCY);
-        check_outputs(8'b00100100, 7'h10, "Case1");
+        // Repeating a qubit inside one instruction rejects the instruction.
+        reset_case;
+        put_beat(3'd0, ELEM_QSINGLE, 8'd2, 0, 7'h30, 5'd10);
+        quantum_first_cycle = 1'b0;
+        put_beat(3'd0, ELEM_QSINGLE, 8'd2, 0, 7'h30, 5'd10);
+        idle_bus;
+        wait_cycles(25);
+        check_equal(illegal_count, 1, "duplicate qubit emits illegal");
+        check_equal(fire_count, 0, "duplicate instruction is rejected");
 
-        // Verify nothing fires on the surrounding cycles
-        @(posedge clk);
-        if (|qubit_valid_o)
-            $display("[FAIL][t=%0d] Case1: unexpected fire after dispatch_time", t_cnt);
+        // A pair cannot use the same physical qubit as both endpoints.
+        reset_case;
+        put_beat(3'd0, ELEM_QPAIR, 8'd4, 8'd4, 7'h31, 5'd10);
+        idle_bus;
+        wait_cycles(25);
+        check_equal(illegal_count, 1, "same-endpoint pair emits illegal");
+        check_equal(invalid_pair_count, 0, "same-endpoint pair is semantic illegal");
+        check_equal(fire_count, 0, "same-endpoint pair is rejected");
 
-        // ================================================================= //
-        // Case 2 – QV.SINGLE, block_imm=6, qubits [0,3], gate=0x20
-        //   dispatch_time = base + 6
-        // ================================================================= //
-        wait_until(30); #1;
-        base = t_cnt;
-        $display("[TB] --- Case 2: QV.SINGLE qubits=[0,3] gate=0x20 block_imm=6 ---");
-        $display("[TB]   base=%0d  dispatch_time=%0d", base, base+6);
+        // Different instructions may queue the same qubit at different times.
+        reset_case;
+        put_beat(3'd0, ELEM_QSINGLE, 8'd0, 0, 7'h40, 5'd20);
+        put_beat(3'd1, ELEM_QSINGLE, 8'd0, 0, 7'h41, 5'd20);
+        put_beat(3'd2, ELEM_QSINGLE, 8'd7, 0, 7'h42, 5'd25);
+        idle_bus;
+        wait_cycles(55);
+        check_equal(fire_per_q[0], 2, "same qubit at different times is legal");
+        check_equal(illegal_count, 0, "different timestamps have no illegal");
 
-        drive_beat(ELEM_QSINGLE, 8'd0, 8'd0, 7'h20, 4'h6, 1'b1, 1'b0);
-        @(posedge clk); #1;
-        drive_beat(ELEM_QSINGLE, 8'd3, 8'd0, 7'h20, 4'h6, 1'b0, 1'b1);
-        @(posedge clk); #1;
-        idle_quantum;
+        // Offsets 20 then 19 on consecutive flush cycles target one timestamp.
+        reset_case;
+        put_beat(3'd0, ELEM_QSINGLE, 8'd0, 0, 7'h50, 5'd20);
+        put_beat(3'd1, ELEM_QSINGLE, 8'd0, 0, 7'h51, 5'd19);
+        put_beat(3'd2, ELEM_QSINGLE, 8'd7, 0, 7'h52, 5'd25);
+        idle_bus;
+        wait_cycles(55);
+        check_equal(illegal_count, 1, "same qubit and timestamp emits illegal");
+        check_equal(fire_per_q[0], 1, "conflicting instruction is atomically rejected");
 
-        wait_until(base + 6);
-        check_outputs(8'b00001001, 7'h20, "Case2");
+        // Fill a small FIFO with far-future, distinct timestamps.
+        reset_case;
+        put_beat(3'd0, ELEM_QSINGLE, 8'd0, 0, 7'h60, 5'd0);
+        put_beat(3'd1, ELEM_QSINGLE, 8'd0, 0, 7'h61, 5'd0);
+        put_beat(3'd2, ELEM_QSINGLE, 8'd0, 0, 7'h62, 5'd0);
+        put_beat(3'd3, ELEM_QSINGLE, 8'd0, 0, 7'h63, 5'd0);
+        put_beat(3'd4, ELEM_QSINGLE, 8'd0, 0, 7'h64, 5'd0);
+        put_beat(3'd5, ELEM_QSINGLE, 8'd0, 0, 7'h65, 5'd0);
+        put_beat(3'd6, ELEM_QSINGLE, 8'd7, 0, 7'h66, 5'd0);
+        idle_bus;
+        wait_cycles(15);
+        checks = checks + 1;
+        if (overflow_count < 1) begin
+            failures = failures + 1;
+            $display("[FAIL] FIFO overflow category was not exercised");
+        end else begin
+            $display("[PASS] FIFO overflow pulses: %0d", overflow_count);
+        end
+        check_equal(invalid_index_count, 0, "overflow is not invalid-index");
+        check_equal(invalid_pair_count, 0, "overflow is not invalid-pair");
+        check_equal(illegal_count, 0, "overflow is not illegal");
 
-        @(posedge clk);
-        if (|qubit_valid_o)
-            $display("[FAIL][t=%0d] Case2: unexpected fire after dispatch_time", t_cnt);
-
-        // ================================================================= //
-        // Case 3 – QV.PAIR, block_imm=0, tgt=qubit1, src=qubit4, gate=0x30
-        //   Single-beat instruction; BOTH tgt and src must fire together
-        //   dispatch_time = base + FIXED_LATENCY
-        // ================================================================= //
-        wait_until(50); #1;
-        base = t_cnt;
-        $display("[TB] --- Case 3: QV.PAIR tgt=1 src=4 gate=0x30 block_imm=0 ---");
-        $display("[TB]   base=%0d  dispatch_time=%0d", base, base+FIXED_LATENCY);
-
-        drive_beat(ELEM_QPAIR, 8'd1, 8'd4, 7'h30, 4'h0, 1'b1, 1'b1);
-        @(posedge clk); #1;
-        idle_quantum;
-
-        wait_until(base + FIXED_LATENCY);
-        check_outputs(8'b00010010, 7'h30, "Case3");
-
-        @(posedge clk);
-        if (|qubit_valid_o)
-            $display("[FAIL][t=%0d] Case3: unexpected fire after dispatch_time", t_cnt);
-
-        // ================================================================= //
-        // Summary
-        // ================================================================= //
-        repeat (5) @(posedge clk);
-        $display("[TB] --- DONE: %0d passed, %0d failed ---", pass_count, fail_count);
+        $display("[TB] DONE: checks=%0d failures=%0d", checks, failures);
+        if (failures != 0)
+            $fatal(1, "quantum_dispatcher directed regression failed");
         $finish;
     end
-
 endmodule

@@ -1,4 +1,0 @@
-Vvproc_qdisp_bell_tb___024root__DepSet_hceaccb7b__3__Slow.o: \
- Vvproc_qdisp_bell_tb___024root__DepSet_hceaccb7b__3__Slow.cpp \
- Vvproc_qdisp_bell_tb__pch.h Vvproc_qdisp_bell_tb__Syms.h \
- Vvproc_qdisp_bell_tb___024root.h

@@ -34,16 +34,19 @@ module time_controller #(
     wire [OP_WIDTH-1:0]   opcode = fifo_data[OP_WIDTH-1 : 0];
     wire [TIME_WIDTH-1:0] t_inst = fifo_data[TIME_WIDTH+OP_WIDTH-1 : OP_WIDTH];
 
+    // Modular reached-or-passed test. Valid while the scheduled or overdue
+    // distance is less than half the counter range.
+    wire [TIME_WIDTH-1:0] time_since_target = (t_cnt + {{(TIME_WIDTH-1){1'b0}}, 1'b1}) - t_inst;
+    wire                  target_reached    = ~time_since_target[TIME_WIDTH-1];
+
     reg [1:0] state, next_state;
 
     // Next-state logic
     always @(*) begin
         case (state)
             IDLE:  next_state = fifo_empty ? IDLE : WAIT;
-            // Use <= so that a qubit whose FIFO was written late (after
-            // dispatch_time was already approaching) still fires as soon
-            // as it enters WAIT, rather than getting stuck forever.
-            WAIT:  next_state = (t_inst <= (t_cnt + 1'b1)) ? ISSUE : WAIT;
+            // ISSUE begins when t_cnt+1 reaches the target.
+            WAIT:  next_state = target_reached ? ISSUE : WAIT;
             ISSUE: next_state = IDLE;
             default: next_state = IDLE;
         endcase

@@ -1,3 +1,0 @@
-Vvproc_qdisp_bell_tb_vproc_xif__XB3_XC20__DepSet_ha5ba19a0__0.o: \
- Vvproc_qdisp_bell_tb_vproc_xif__XB3_XC20__DepSet_ha5ba19a0__0.cpp \
- Vvproc_qdisp_bell_tb__pch.h Vvproc_qdisp_bell_tb_vproc_xif__XB3_XC20.h

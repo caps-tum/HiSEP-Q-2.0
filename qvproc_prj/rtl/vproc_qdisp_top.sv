@@ -28,8 +28,7 @@ module vproc_qdisp_top
     parameter TIME_WIDTH    = 20,
     parameter GATE_WIDTH    = 7,
     parameter BLOCK_IMM_W   = 5,
-    // FIXED_LATENCY must be > VL_MAX + 1.
-    // Bell program uses VL=8, so 16 gives ample headroom.
+    // Flush-relative default offset when block_imm is zero.
     parameter FIXED_LATENCY = 16
 )(
     input  wire                              clk,
@@ -51,6 +50,7 @@ module vproc_qdisp_top
     // Measure handshake  (pass-through)
     // ------------------------------------------------------------------
     input  wire                              measure_done_i,
+    input  wire [31:0]                       measure_result_i,
     output wire                              qvsg_meas_o,
     output wire                              measure_issued_done_o,
 
@@ -82,6 +82,9 @@ module vproc_qdisp_top
     output wire [NUM_QUBITS-1:0]             qubit_valid_o,
     output wire [NUM_QUBITS-1:0]             qubit_error_o,
     output wire [NUM_QUBITS-1:0]             qubit_ctrl_o,
+    output wire                              invalid_index_error_o,
+    output wire                              invalid_pair_error_o,
+    output wire                              illegal_error_o,
 
     // Expose t_cnt so the testbench can read dispatch timing
     output wire [TIME_WIDTH-1:0]             t_cnt_o
@@ -127,6 +130,7 @@ module vproc_qdisp_top
         .mem_rdata_i                  ( mem_rdata_i                 ),
         .pend_vreg_wr_map_o           ( pend_vreg_wr_map_unused     ),
         .measure_done_i               ( measure_done_i              ),
+        .measure_result_i             ( measure_result_i            ),
         .qvsg_meas_o                  ( qvsg_meas_o                 ),
         .measure_issued_done_o        ( measure_issued_done_o       ),
         .quantum_valid_o              ( quantum_valid_o             ),
@@ -164,6 +168,7 @@ module vproc_qdisp_top
         .t_cnt               ( t_cnt_r              ),
         .quantum_valid       ( quantum_valid_o       ),
         .quantum_op          ( quantum_op_o          ),
+        .quantum_instr_id    ( quantum_instr_id_o    ),
         .quantum_elem1       ( quantum_elem1_o       ),
         .quantum_elem2       ( quantum_elem2_o       ),
         .quantum_elem3       ( quantum_elem3_o       ),
@@ -173,7 +178,10 @@ module vproc_qdisp_top
         .qubit_gate_o        ( qubit_gate_o          ),
         .qubit_valid_o       ( qubit_valid_o         ),
         .qubit_error_o       ( qubit_error_o         ),
-        .qubit_ctrl_o        ( qubit_ctrl_o          )
+        .qubit_ctrl_o        ( qubit_ctrl_o          ),
+        .invalid_index_error_o ( invalid_index_error_o ),
+        .invalid_pair_error_o  ( invalid_pair_error_o  ),
+        .illegal_error_o       ( illegal_error_o       )
     );
 
 endmodule

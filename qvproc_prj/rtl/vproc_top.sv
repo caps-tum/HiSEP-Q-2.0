@@ -48,7 +48,10 @@ module vproc_top import vproc_pkg::*; #(
         output logic               quantum_data_ready_o, // quantum qvproc
         output logic               qvsg_meas_o,
         output logic               measure_issued_done_o,
-        input  logic               measure_done_i
+        input  logic               measure_done_i,
+        // Measurement bits in elem1 issue order, sampled with measure_done_i
+        // and exposed through read-only CSR qmres.
+        input  logic [31:0]        measure_result_i
     );
 
     if ((MEM_W & (MEM_W - 1)) != 0 || MEM_W < 32) begin
@@ -133,26 +136,14 @@ module vproc_top import vproc_pkg::*; #(
     logic [1:0]  measure_issued_done_cnt_q, measure_issued_done_cnt_d;
     logic [7:0]  measure_event_count_q, measure_event_count_d;
     logic [7:0]  measure_event_budget_q, measure_event_budget_d;
+    logic [31:0] measure_result_q, measure_result_d;
     logic        qsg_measure_stream_done;
     logic        ibex_fetch_enable;
     logic        vproc_issue_block;
     logic        vproc_dispatch_pause;
 
-    function automatic logic [7:0] qsg_measure_elem_budget(input cfg_lmul lmul);
-        begin
-            unique case (lmul)
-                LMUL_F2: qsg_measure_elem_budget = 8'd8;
-                LMUL_1:  qsg_measure_elem_budget = 8'd16;
-                LMUL_2:  qsg_measure_elem_budget = 8'd32;
-                LMUL_4:  qsg_measure_elem_budget = 8'd64;
-                LMUL_8:  qsg_measure_elem_budget = 8'd128;
-                default: qsg_measure_elem_budget = 8'd0;
-            endcase
-        end
-    endfunction
-
     // CSR register interface for Vector Unit
-    localparam int unsigned VECT_CSR_CNT = 7;
+    localparam int unsigned VECT_CSR_CNT = 8;
     logic [11:0] vect_csr_addr [VECT_CSR_CNT];
     logic [31:0] vect_csr_rdata[VECT_CSR_CNT];
     logic        vect_csr_we   [VECT_CSR_CNT];
@@ -164,7 +155,8 @@ module vproc_top import vproc_pkg::*; #(
         12'h00F, // vcsr
         12'hC20, // vl
         12'hC21, // vtype
-        12'hC22  // vlenb
+        12'hC22, // vlenb
+        12'hCC0  // qmres: HiSEP-Q measurement result (custom read-only range)
     };
 
 //`ifdef MAIN_CORE_IBEX
@@ -462,6 +454,7 @@ module vproc_top import vproc_pkg::*; #(
     assign vect_csr_rdata[4] = csr_vl;
     assign vect_csr_rdata[5] = csr_vtype;
     assign vect_csr_rdata[6] = csr_vlenb;
+    assign vect_csr_rdata[7] = measure_result_q;
     assign csr_vstart_wr     = vect_csr_wdata[0];
     assign csr_vstart_wren   = vect_csr_we[0];
     assign csr_vxsat_wr      = vect_csr_we[1] ? vect_csr_wdata[1][0]   : vect_csr_wdata[3][0];
@@ -822,12 +815,14 @@ module vproc_top import vproc_pkg::*; #(
                                      (quantum_op_o == ELEM_QSINGLE) &
                                      (quantum_instr_id_o == measure_instr_id_q) &
                                      (quantum_elem3_o[31:25] == QSG_MEASURE_GATE_ID);
+    // Drain exactly VL beats. csr_vl stays stable while measurement blocks
+    // later vector issue.
     assign qsg_measure_stream_done = measure_active_q &
                                      ~measure_stream_drained_q &
                                      qsg_measure_instr_match &
                                      (((measure_event_count_q + 8'd1) ==
                                        ((measure_event_budget_q != 8'd0) ? measure_event_budget_q :
-                                                                           qsg_measure_elem_budget(quantum_lmul))));
+                                                                           csr_vl[7:0])));
 
     always_comb begin
         measure_active_d          = measure_active_q;
@@ -836,6 +831,7 @@ module vproc_top import vproc_pkg::*; #(
         measure_issued_done_cnt_d = measure_issued_done_cnt_q;
         measure_event_count_d     = measure_event_count_q;
         measure_event_budget_d    = measure_event_budget_q;
+        measure_result_d          = measure_result_q;
 
         if (measure_issued_done_cnt_q != 2'd0) begin
             measure_issued_done_cnt_d = measure_issued_done_cnt_q - 2'd1;
@@ -847,6 +843,8 @@ module vproc_top import vproc_pkg::*; #(
             measure_issued_done_cnt_d = 2'd0;
             measure_event_count_d     = 8'd0;
             measure_event_budget_d    = 8'd0;
+            // The latest measurement overwrites qmres.
+            measure_result_d          = measure_result_i;
         end else begin
             if (qsg_measure_issue) begin
                 measure_active_d         = 1'b1;
@@ -858,7 +856,7 @@ module vproc_top import vproc_pkg::*; #(
             if (qsg_measure_instr_match) begin
                 measure_event_count_d = measure_event_count_q + 8'd1;
                 if (measure_event_budget_q == 8'd0) begin
-                    measure_event_budget_d = qsg_measure_elem_budget(quantum_lmul);
+                    measure_event_budget_d = csr_vl[7:0];
                 end
             end
             if (qsg_measure_stream_done) begin
@@ -876,6 +874,7 @@ module vproc_top import vproc_pkg::*; #(
             measure_issued_done_cnt_q <= '0;
             measure_event_count_q     <= '0;
             measure_event_budget_q    <= '0;
+            measure_result_q          <= '0;
         end else begin
             measure_active_q          <= measure_active_d;
             measure_stream_drained_q  <= measure_stream_drained_d;
@@ -883,6 +882,7 @@ module vproc_top import vproc_pkg::*; #(
             measure_issued_done_cnt_q <= measure_issued_done_cnt_d;
             measure_event_count_q     <= measure_event_count_d;
             measure_event_budget_q    <= measure_event_budget_d;
+            measure_result_q          <= measure_result_d;
         end
     end
 

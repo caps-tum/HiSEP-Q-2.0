@@ -28,3 +28,16 @@ demo/elf_combined.mem
 
 # Wave dump from the standalone qrv_mf2_direct testbench
 qvproc_prj/tb/quantum_cases/qrv_mf2_direct/*.vcd
+
+# ── Verilator opcode simulator build output ─────────────────────────────────
+demo/verilator/obj_dir/
+
+# ── Local Claude Code <-> Codex coordination notes (not for the repo) ───────
+# User has confirmed twice (once after this line was removed by someone/
+# something else) that existing_problem.md should stay local-only, not
+# tracked. If you're about to "fix" this again, please check with the user
+# directly first rather than re-editing this line.
+existing_problem.md
+
+# ── Superseded documentation kept locally for reference ─────────────────────
+docs/archive/

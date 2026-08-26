@@ -1,27 +1,14 @@
 // quantum_dispatcher.v
 //
-// Sits between the qvproc vector core quantum output ports and a bank of
-// per-qubit timed_fifo instances.
+// Accumulates accepted beats by instruction ID and commits one per-qubit
+// FIFO-write burst. All touched qubits receive one dispatch timestamp.
 //
-// Each cycle that quantum_valid && quantum_data_ready are high, the module:
-//   1. Extracts the target qubit index from quantum_elem1[7:0].
-//   2. Extracts the GateID  from quantum_elem3[31:25] (7-bit operation word).
-//   3. Extracts Block_imm  from quantum_elem3[10:7]  (4-bit timing offset).
-//   4. Computes dispatch_time = base_time + Block_imm, where base_time is
-//      t_cnt latched at the first cycle of the current instruction stream.
-//   5. Writes {GateID} into the target qubit's timed_fifo.
-//   6. For QV.PAIR instructions, also writes to the source qubit's FIFO
-//      (source index from quantum_elem2[7:0]).
+// A new instruction ID flushes the previous instruction; an idle timeout
+// flushes the final one. quantum_last_cycle is not a reliable stream-end
+// marker on the current QV.SINGLE/QV.PAIR interface.
 //
-// Each timed_fifo holds the (dispatch_time, GateID) pair and releases
-// GateID on qubit_gate_o when the global counter t_cnt reaches
-// dispatch_time (matching the time_controller ISSUE condition).
-//
-// Port naming:
-//   quantum_*  : directly driven from vproc_top output ports (same names)
-//   qubit_gate_o : flat bus [GATE_WIDTH*NUM_QUBITS-1:0], LSB = qubit 0
-//   qubit_valid_o: high for one cycle when the gate is being issued
-//   qubit_error_o: FIFO overflow per qubit
+// Each timed_fifo stores {dispatch_time, role, GateID} and emits one gate
+// pulse when the global counter reaches dispatch_time.
 
 `timescale 1ns / 1ps
 
@@ -43,9 +30,7 @@ module quantum_dispatcher #(
     // 5-bit since the mask bit was removed (RFC #3 / custom-0 migration).
     parameter BLOCK_IMM_W = 5,
 
-    // Fixed latency (in t_cnt ticks) used when Block_imm == 0.
-    // Must be large enough that the timed_fifo write completes before
-    // t_cnt reaches dispatch_time.  A value of 4-8 is typically sufficient.
+    // Flush-relative offset used when Block_imm is zero.
     parameter FIXED_LATENCY = 4
 )(
     input  wire                              clk,
@@ -60,12 +45,13 @@ module quantum_dispatcher #(
     // ------------------------------------------------------------------ //
     input  wire                              quantum_valid,
     input  wire [4:0]                        quantum_op,
+    input  wire [2:0]                        quantum_instr_id, // burst-write trigger (see above)
     input  wire [31:0]                       quantum_elem1,   // [7:0] = target qubit index
     input  wire [31:0]                       quantum_elem2,   // [7:0] = source qubit (QV.PAIR)
-    input  wire [31:0]                       quantum_elem3,   // [31:25]=GateID, [10:7]=Block_imm
+    input  wire [31:0]                       quantum_elem3,   // [31:25]=GateID, [11:7]=Block_imm
     input  wire                              quantum_data_ready,
     input  wire                              quantum_first_cycle,
-    input  wire                              quantum_last_cycle,  // reserved, available for future use
+    input  wire                              quantum_last_cycle, // NOT used for burst timing -- see note below
 
     // ------------------------------------------------------------------ //
     // Per-qubit gate outputs
@@ -80,7 +66,16 @@ module quantum_dispatcher #(
     // For QV.PAIR: 1 = this qubit is the control side (elem1/vs1),
     //              0 = this qubit is the target side  (elem2/vs2).
     // For QV.SINGLE / QV.ROTG / QV.ROTV: always 1.
-    output wire [NUM_QUBITS-1:0]             qubit_ctrl_o
+    output wire [NUM_QUBITS-1:0]             qubit_ctrl_o,
+
+    // Per-event error pulses. QV.PAIR bounds failures are reported only as
+    // invalid_pair_error_o; neither endpoint is written for that beat.
+    output wire                              invalid_index_error_o,
+    output wire                              invalid_pair_error_o,
+    // Illegal covers a repeated qubit within one instruction, a QV.PAIR
+    // with identical endpoints, or a new instruction that would schedule a
+    // qubit at a timestamp already pending in that qubit's timed FIFO.
+    output wire                              illegal_error_o
 );
 
     // ------------------------------------------------------------------ //
@@ -91,84 +86,135 @@ module quantum_dispatcher #(
     localparam ELEM_QROTG   = 5'd18;
     localparam ELEM_QROTV   = 5'd19;
 
-    // ------------------------------------------------------------------ //
-    // Field extraction
-    // ------------------------------------------------------------------ //
+    // Must exceed every legal gap within one instruction stream.
+    localparam IDLE_FLUSH_CYCLES = 8;
+
+    // Latch metadata because the beat that flushes the old ID already drives
+    // the new instruction's elem3 values.
     wire [GATE_WIDTH-1:0]  gate_id   = quantum_elem3[31:25];
     wire [BLOCK_IMM_W-1:0] block_imm = quantum_elem3[7 +: BLOCK_IMM_W];  // [11:7]
     wire [7:0]             tgt_qubit = quantum_elem1[7:0];
     wire [7:0]             src_qubit = quantum_elem2[7:0];  // valid for QV.PAIR only
 
+    wire beat_valid = quantum_valid && quantum_data_ready;
+
     // ------------------------------------------------------------------ //
-    // Base time: latch t_cnt at quantum_first_cycle of each instruction
-    // stream, then hold for the remaining beats of that stream.
-    //
-    // On the very first beat (first_cycle is high this cycle), use t_cnt
-    // directly in the combinational dispatch_time to avoid a one-cycle
-    // pipeline stall.
+    // This beat's own contribution to the touched-qubit set.
     // ------------------------------------------------------------------ //
-    reg [TIME_WIDTH-1:0] base_time_q;
+    reg [NUM_QUBITS-1:0] beat_touch, beat_touch_ctrl;
+    always @(*) begin
+        beat_touch      = {NUM_QUBITS{1'b0}};
+        beat_touch_ctrl = {NUM_QUBITS{1'b0}};
+        if (beat_valid && (quantum_op == ELEM_QPAIR)) begin
+            // A pair beat is atomic: both endpoints must be in range and
+            // distinct before either endpoint contributes to the burst.
+            if ((tgt_qubit < NUM_QUBITS) &&
+                (src_qubit < NUM_QUBITS) &&
+                (src_qubit != tgt_qubit)) begin
+                beat_touch     [tgt_qubit] = 1'b1;
+                beat_touch_ctrl[tgt_qubit] = 1'b1;   // control / primary
+                beat_touch     [src_qubit] = 1'b1;
+                beat_touch_ctrl[src_qubit] = 1'b0;   // target / secondary
+            end
+        end else if (beat_valid && (tgt_qubit < NUM_QUBITS)) begin
+            beat_touch     [tgt_qubit] = 1'b1;
+            beat_touch_ctrl[tgt_qubit] = 1'b1;
+        end
+    end
+
+    wire pair_invalid_index = beat_valid && (quantum_op == ELEM_QPAIR) &&
+                              ((tgt_qubit >= NUM_QUBITS) ||
+                               (src_qubit >= NUM_QUBITS));
+    assign invalid_pair_error_o  = pair_invalid_index;
+    assign invalid_index_error_o = beat_valid && (quantum_op != ELEM_QPAIR) &&
+                                   (tgt_qubit >= NUM_QUBITS);
+
+    // ------------------------------------------------------------------ //
+    // Accumulator: touched-qubit set, role bits, GateID and Block_imm for
+    // whichever instruction is currently being collected.
+    // ------------------------------------------------------------------ //
+    reg [NUM_QUBITS-1:0]  touched_q, touched_ctrl_q;
+    reg [GATE_WIDTH-1:0]  gate_id_q;
+    reg [BLOCK_IMM_W-1:0] block_imm_q;
+    reg [2:0]             active_id_q;
+    reg                   active_valid_q;   // touched_q/etc hold a real pending instruction
+    reg                   active_illegal_q; // reject the whole accumulated instruction
+    reg [$clog2(IDLE_FLUSH_CYCLES+1)-1:0] idle_ctr_q;
+
+    // A new ID closes the previously accumulated instruction.
+    wire new_instr  = beat_valid && (!active_valid_q || (quantum_instr_id != active_id_q));
+    wire idle_flush = active_valid_q && !beat_valid && (idle_ctr_q >= IDLE_FLUSH_CYCLES);
+    // Flush the old state, not the beat that triggered new_instr.
+    wire flush_prev = (new_instr && active_valid_q) || idle_flush;
+
+    wire pair_same_endpoint = beat_valid && (quantum_op == ELEM_QPAIR) &&
+                              !pair_invalid_index && (src_qubit == tgt_qubit);
+    wire repeated_in_instruction = beat_valid && active_valid_q &&
+                                   (quantum_instr_id == active_id_q) &&
+                                   (|(beat_touch & touched_q));
+    wire beat_illegal = pair_same_endpoint || repeated_in_instruction;
 
     always @(posedge clk) begin
         if (reset) begin
-            base_time_q <= {TIME_WIDTH{1'b0}};
-        end else if (quantum_valid && quantum_first_cycle) begin
-            base_time_q <= t_cnt;
+            touched_q      <= {NUM_QUBITS{1'b0}};
+            touched_ctrl_q <= {NUM_QUBITS{1'b0}};
+            gate_id_q      <= {GATE_WIDTH{1'b0}};
+            block_imm_q    <= {BLOCK_IMM_W{1'b0}};
+            active_id_q    <= 3'b0;
+            active_valid_q <= 1'b0;
+            active_illegal_q <= 1'b0;
+            idle_ctr_q     <= 0;
+        end else if (beat_valid && new_instr) begin
+            // The old state flushes combinationally; this starts the new ID.
+            touched_q      <= beat_touch;
+            touched_ctrl_q <= beat_touch_ctrl;
+            gate_id_q      <= gate_id;
+            block_imm_q    <= block_imm;
+            active_id_q    <= quantum_instr_id;
+            active_valid_q <= 1'b1;
+            active_illegal_q <= beat_illegal;
+            idle_ctr_q     <= 0;
+        end else if (beat_valid) begin
+            // Any repeated qubit invalidates the accumulated instruction.
+            touched_q      <= touched_q | beat_touch;
+            touched_ctrl_q <= (beat_touch_ctrl & beat_touch) | (touched_ctrl_q & ~beat_touch);
+            active_illegal_q <= active_illegal_q | beat_illegal;
+            idle_ctr_q     <= 0;
+        end else if (idle_flush) begin
+            // No later ID will flush the final instruction.
+            touched_q      <= {NUM_QUBITS{1'b0}};
+            touched_ctrl_q <= {NUM_QUBITS{1'b0}};
+            active_valid_q <= 1'b0;
+            active_illegal_q <= 1'b0;
+            idle_ctr_q     <= 0;
+        end else if (active_valid_q) begin
+            idle_ctr_q <= idle_ctr_q + 1'b1;
         end
     end
 
-    // Combinational: correct on first_cycle AND on subsequent beats
-    wire [TIME_WIDTH-1:0] cur_base =
-        (quantum_valid && quantum_first_cycle) ? t_cnt : base_time_q;
-
-    // Dispatch time selection:
-    //   block_imm != 0  ->  cur_base + block_imm   (scheduled: fire at specified slot)
-    //   block_imm == 0  ->  cur_base + FIXED_LATENCY  (unscheduled: fixed offset from
-    //                        instruction start, same for every element in the stream)
-    //
-    // Both cases anchor to cur_base (= t_cnt latched at first_cycle), so all elements
-    // of the same vector instruction share one dispatch_time and fire together.
-    //
-    // FIXED_LATENCY constraint: must be > VL_MAX + 1, where VL_MAX is the longest
-    // qubit-index stream this dispatcher will receive.  This guarantees the last
-    // FIFO write completes before the time_controller's WAIT window expires.
-    wire use_fixed_latency = (block_imm == {BLOCK_IMM_W{1'b0}});
-    wire [TIME_WIDTH-1:0] fixed_lat    = FIXED_LATENCY;   // parameter -> wire, width extended
+    // ------------------------------------------------------------------ //
+    // Flush-relative dispatch time shared by the whole instruction.
+    // block_imm=0 selects FIXED_LATENCY.
+    // ------------------------------------------------------------------ //
+    wire use_fixed_latency = (block_imm_q == {BLOCK_IMM_W{1'b0}});
+    wire [TIME_WIDTH-1:0] fixed_lat = FIXED_LATENCY;
     wire [TIME_WIDTH-1:0] dispatch_time =
-        cur_base + (use_fixed_latency ? fixed_lat
-                                      : {{(TIME_WIDTH-BLOCK_IMM_W){1'b0}}, block_imm});
+        t_cnt + (use_fixed_latency ? fixed_lat
+                                    : {{(TIME_WIDTH-BLOCK_IMM_W){1'b0}}, block_imm_q});
 
     // ------------------------------------------------------------------ //
-    // FIFO write enable per qubit
-    //
-    // Gate the write on quantum_data_ready to suppress QROTV startup-window
-    // beats where elem1/elem2 are not yet valid.
+    // Commit every touched qubit in the same cycle.
     // ------------------------------------------------------------------ //
-    // fifo_we   : write enable per qubit
-    // fifo_ctrl : role bit per qubit (1 = control/primary elem1, 0 = target/secondary elem2)
-    reg [NUM_QUBITS-1:0] fifo_we;
-    reg [NUM_QUBITS-1:0] fifo_ctrl;
-    integer ch;
+    wire [NUM_QUBITS-1:0]  fifo_time_conflict;
+    wire flush_timestamp_conflict = flush_prev && !active_illegal_q &&
+                                    (|(touched_q & fifo_time_conflict));
+    wire flush_reject = active_illegal_q || flush_timestamp_conflict;
+    wire [NUM_QUBITS-1:0]  fifo_we       =
+        (flush_prev && !flush_reject) ? touched_q : {NUM_QUBITS{1'b0}};
+    wire [NUM_QUBITS-1:0]  fifo_ctrl     = touched_ctrl_q;
+    wire [GATE_WIDTH-1:0]  gate_id_for_write = gate_id_q;
 
-    always @(*) begin
-        fifo_we   = {NUM_QUBITS{1'b0}};
-        fifo_ctrl = {NUM_QUBITS{1'b0}};
-        if (quantum_valid && quantum_data_ready) begin
-            // All op types: write gate to the target qubit (primary / control side)
-            if (tgt_qubit < NUM_QUBITS) begin
-                fifo_we  [tgt_qubit] = 1'b1;
-                fifo_ctrl[tgt_qubit] = 1'b1;   // control / primary
-            end
-
-            // QV.PAIR only: source qubit is the target side of the two-qubit gate
-            if ((quantum_op == ELEM_QPAIR) &&
-                (src_qubit < NUM_QUBITS) &&
-                (src_qubit != tgt_qubit)) begin
-                fifo_we  [src_qubit] = 1'b1;
-                fifo_ctrl[src_qubit] = 1'b0;   // target / secondary
-            end
-        end
-    end
+    assign illegal_error_o = beat_illegal || flush_timestamp_conflict;
 
     // ------------------------------------------------------------------ //
     // Per-qubit timed_fifo instances
@@ -192,12 +238,13 @@ module quantum_dispatcher #(
                 .clk        (clk),
                 .reset      (reset),
                 .i_fifo_time(dispatch_time),
-                .i_fifo_op  ({fifo_ctrl[i], gate_id}),   // MSB = role
+                .i_fifo_op  ({fifo_ctrl[i], gate_id_for_write}),   // MSB = role
                 .i_fifo_we  (fifo_we[i]),
                 .t_cnt      (t_cnt),
                 .o_data     (gate_out_wide),
                 .o_valid    (gate_valid),
-                .error      (err_out)
+                .error      (err_out),
+                .time_conflict(fifo_time_conflict[i])
             );
 
             // Flat bus slice for qubit i

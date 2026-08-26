@@ -1,3 +1,0 @@
-Vvproc_qdisp_bell_tb_timed_fifo__O8__DepSet_h3460b861__0__Slow.o: \
- Vvproc_qdisp_bell_tb_timed_fifo__O8__DepSet_h3460b861__0__Slow.cpp \
- Vvproc_qdisp_bell_tb__pch.h Vvproc_qdisp_bell_tb_timed_fifo__O8.h

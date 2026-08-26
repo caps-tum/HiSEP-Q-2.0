@@ -35,6 +35,9 @@ module vproc_qdisp_bell_tb;
     parameter POST_EVENT_IDLE_CYCLES   = 200;
     parameter MEASURE_DONE_DELAY_CYCLES= 50;
     parameter MEM_WORDS                = MEM_SZ / (MEM_W / 8);
+    // Ibex reset fetch is {boot_addr_i[31:8], 8'h80}. vproc_top supplies
+    // boot_addr_i=0, so instruction images must begin at byte 0x80.
+    parameter BOOT_WORD_ADDR           = 32;
 
     // quantum_dispatcher parameters (must match vproc_qdisp_top defaults)
     parameter NUM_QUBITS    = 16;   // Bell program uses qubits 0-15
@@ -56,7 +59,10 @@ module vproc_qdisp_bell_tb;
     integer idle_count;             // cycles since the last quantum event
     integer resume_event_count;
     integer qubit_fire_count;
-    integer fail_count;
+    integer invalid_index_count;
+    integer invalid_pair_count;
+    integer fifo_overflow_count;
+    integer illegal_count;
 
     // -----------------------------------------------------------------
     // Op-name helper (same as original Bell TB)
@@ -129,6 +135,7 @@ module vproc_qdisp_bell_tb;
     // Measure handshake
     // -----------------------------------------------------------------
     reg  measure_done;
+    reg  [31:0] measure_result;   // result bits sent back alongside measure_done
     wire qvsg_meas;
     wire measure_issued_done;
 
@@ -159,6 +166,9 @@ module vproc_qdisp_bell_tb;
     wire [NUM_QUBITS-1:0]            qubit_valid;
     wire [NUM_QUBITS-1:0]            qubit_error;
     wire [NUM_QUBITS-1:0]            qubit_ctrl;   // 1=control side, 0=target side
+    wire                              invalid_index_error;
+    wire                              invalid_pair_error;
+    wire                              illegal_error;
     wire [TIME_WIDTH-1:0]            t_cnt;
 
     // -----------------------------------------------------------------
@@ -186,7 +196,7 @@ module vproc_qdisp_bell_tb;
         .FIFO_DEPTH    ( 8             ),
         .TIME_WIDTH    ( TIME_WIDTH    ),
         .GATE_WIDTH    ( GATE_WIDTH    ),
-        .BLOCK_IMM_W   ( 4             ),
+        .BLOCK_IMM_W   ( 5             ),  // Architectural field width.
         .FIXED_LATENCY ( FIXED_LATENCY )
     ) dut (
         .clk                        ( clk                      ),
@@ -200,6 +210,7 @@ module vproc_qdisp_bell_tb;
         .mem_err_i                  ( mem_err                  ),
         .mem_rdata_i                ( mem_rdata                ),
         .measure_done_i             ( measure_done             ),
+        .measure_result_i           ( measure_result           ),
         .qvsg_meas_o                ( qvsg_meas                ),
         .measure_issued_done_o      ( measure_issued_done      ),
         .quantum_valid_o            ( quantum_valid            ),
@@ -221,6 +232,9 @@ module vproc_qdisp_bell_tb;
         .qubit_valid_o              ( qubit_valid              ),
         .qubit_error_o              ( qubit_error              ),
         .qubit_ctrl_o               ( qubit_ctrl               ),
+        .invalid_index_error_o      ( invalid_index_error      ),
+        .invalid_pair_error_o       ( invalid_pair_error       ),
+        .illegal_error_o            ( illegal_error            ),
         .t_cnt_o                    ( t_cnt                    )
     );
 
@@ -246,6 +260,8 @@ module vproc_qdisp_bell_tb;
         else               idle_count = idle_count + 1;
 
         if (mem_req && mem_we && (mem_idx >= 0) && (mem_idx < MEM_WORDS)) begin
+            $display("[QDISP_TB][cycle=%0d][STORE] addr=0x%08x data=0x%08x be=%b",
+                     cycle_count, mem_addr, mem_wdata, mem_be);
             for (i = 0; i < (MEM_W/8); i = i + 1) begin
                 if (mem_be[i])
                     mem[mem_idx][(i*8) +: 8] <= mem_wdata[(i*8) +: 8];
@@ -284,6 +300,8 @@ module vproc_qdisp_bell_tb;
     reg [31:0] prev_ibex_id_instr;
     reg [2:0]  prev_quantum_instr_id;
     reg        prev_quantum_instr_id_valid;
+    reg [31:0] measure_result_val;   // what the "backend" reports on measure_done;
+                                      // override with +MEASURE_RESULT=0x...
 
     always @(posedge clk) begin
         if (rst) begin
@@ -317,8 +335,10 @@ module vproc_qdisp_bell_tb;
             end else if (measure_wait_pending) begin
                 if (measure_wait_cycles_left == 0) begin
                     measure_done         <= 1'b1;
+                    measure_result       <= measure_result_val;
                     measure_wait_pending <= 1'b0;
-                    $display("[QDISP_TB][cycle=%0d][MEASURE] measure_done=1 (sent)", cycle_count);
+                    $display("[QDISP_TB][cycle=%0d][MEASURE] measure_done=1 (sent) result=%08x",
+                             cycle_count, measure_result_val);
                 end else
                     measure_wait_cycles_left <= measure_wait_cycles_left - 1;
             end
@@ -396,9 +416,27 @@ module vproc_qdisp_bell_tb;
             end
 
             if (|qubit_error) begin
-                $display("[QDISP_TB][cycle=%0d][ERROR] FIFO overflow on qubits: %016b",
+                $display("[QDISP_TB][cycle=%0d][ERROR][FIFO_OVERFLOW] qubits=%016b",
                          cycle_count, qubit_error);
-                fail_count = fail_count + 1;
+                fifo_overflow_count = fifo_overflow_count + 1;
+            end
+
+            if (invalid_index_error) begin
+                $display("[QDISP_TB][cycle=%0d][ERROR][INVALID_INDEX] elem1=%0d NUM_QUBITS=%0d",
+                         cycle_count, quantum_elem1[7:0], NUM_QUBITS);
+                invalid_index_count = invalid_index_count + 1;
+            end
+
+            if (invalid_pair_error) begin
+                $display("[QDISP_TB][cycle=%0d][ERROR][INVALID_PAIR] elem1=%0d elem2=%0d NUM_QUBITS=%0d",
+                         cycle_count, quantum_elem1[7:0], quantum_elem2[7:0], NUM_QUBITS);
+                invalid_pair_count = invalid_pair_count + 1;
+            end
+
+            if (illegal_error) begin
+                $display("[QDISP_TB][cycle=%0d][ERROR][ILLEGAL] duplicate qubit, identical pair endpoints, or timestamp conflict",
+                         cycle_count);
+                illegal_count = illegal_count + 1;
             end
         end
     end
@@ -413,11 +451,17 @@ module vproc_qdisp_bell_tb;
             $display("[QDISP_TB]  cycles         : %0d", cycle_count);
             $display("[QDISP_TB]  quantum events : %0d", quantum_event_idx);
             $display("[QDISP_TB]  qubit fires    : %0d", qubit_fire_count);
-            $display("[QDISP_TB]  FIFO errors    : %0d", fail_count);
-            if (fail_count == 0)
-                $display("[QDISP_TB]  RESULT         : PASS – no FIFO overflows");
+            $display("[QDISP_TB]  invalid-index : %0d", invalid_index_count);
+            $display("[QDISP_TB]  invalid-pair  : %0d", invalid_pair_count);
+            $display("[QDISP_TB]  FIFO-overflow : %0d", fifo_overflow_count);
+            $display("[QDISP_TB]  illegal       : %0d", illegal_count);
+            if ((invalid_index_count + invalid_pair_count +
+                 fifo_overflow_count + illegal_count) == 0)
+                $display("[QDISP_TB]  RESULT         : PASS - no dispatcher errors");
             else
-                $display("[QDISP_TB]  RESULT         : FAIL – %0d error(s)", fail_count);
+                $display("[QDISP_TB]  RESULT         : FAIL - %0d dispatcher error pulse(s)",
+                         invalid_index_count + invalid_pair_count +
+                         fifo_overflow_count + illegal_count);
             $display("[QDISP_TB] ==========================");
         end
     endtask
@@ -432,7 +476,10 @@ module vproc_qdisp_bell_tb;
         last_quantum_event_cycle    = -1;
         idle_count                  = 0;
         qubit_fire_count            = 0;
-        fail_count                  = 0;
+        invalid_index_count         = 0;
+        invalid_pair_count          = 0;
+        fifo_overflow_count         = 0;
+        illegal_count               = 0;
         resume_event_count          = 0;
         resume_stream_seen          = 1'b0;
         mem_rvalid                  = 1'b0;
@@ -441,6 +488,7 @@ module vproc_qdisp_bell_tb;
         prev_quantum_instr_id       = 3'b000;
         prev_quantum_instr_id_valid = 1'b0;
         measure_done                = 1'b0;
+        measure_result               = 32'h0;
         prev_qvsg_meas              = 1'b0;
         prev_measure_issued_done    = 1'b0;
         measure_wait_pending        = 1'b0;
@@ -460,7 +508,9 @@ module vproc_qdisp_bell_tb;
         // Fallback: +INSTR_MEM_FILE=x +DATA_MEM_FILE=y  (legacy split format)
         if ($value$plusargs("MEM_FILE=%s", combined_mem_file)) begin
             $display("[QDISP_TB][INIT] mem file: %0s", combined_mem_file);
-            $readmemh(combined_mem_file, mem);
+            // Initial sequential words are relocated to byte 0x80. Explicit
+            // @ addresses in the combined file still place data absolutely.
+            $readmemh(combined_mem_file, mem, BOOT_WORD_ADDR);
         end else begin
             if (!$value$plusargs("INSTR_MEM_FILE=%s", instr_mem_file))
                 instr_mem_file = "";
@@ -470,13 +520,18 @@ module vproc_qdisp_bell_tb;
                 $display("[QDISP_TB][INIT][WARN] No MEM_FILE or INSTR_MEM_FILE supplied — memory will be zero.");
             end else begin
                 $display("[QDISP_TB][INIT] instruction mem : %0s", instr_mem_file);
-                $readmemh(instr_mem_file, mem);
+                $readmemh(instr_mem_file, mem, BOOT_WORD_ADDR);
                 if (data_mem_file != "") begin
                     $display("[QDISP_TB][INIT] data mem        : %0s", data_mem_file);
                     $readmemh(data_mem_file,  mem);
                 end
             end
         end
+        // What the "backend" reports as the measurement result. Defaults to a
+        // fixed pattern (0xA5A5A5A5); override per-run with +MEASURE_RESULT=0x...
+        if (!$value$plusargs("MEASURE_RESULT=%h", measure_result_val))
+            measure_result_val = 32'hA5A5A5A5;
+
         $display("[QDISP_TB][INIT] Bell co-simulation started.");
         $display("[QDISP_TB][INIT] NUM_QUBITS=%0d  FIXED_LATENCY=%0d  TIME_WIDTH=%0d",
                  NUM_QUBITS, FIXED_LATENCY, TIME_WIDTH);

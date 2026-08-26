@@ -1,151 +1,104 @@
 # HiSEP-Q 2.0
 
-**A RISC-V Vector Extension Architecture for Scalable Qubit Control**
+**A RISC-V vector architecture for scalable quantum-control experiments**
 
-HiSEP-Q 2.0 is a quantum control processor that extends the RISC-V V (RVV) vector ISA with four new quantum instructions. A single RISC-V program can configure, schedule, and fire gates across up to 256 physical qubits (can be easily extended to reconfig vector settings) — no separate pulse sequencer required.
+HiSEP-Q combines an Ibex RV32 scalar core, an RVV-compatible vproc vector core, and a per-qubit timed dispatcher. Four custom vector instructions generate qubit-index, gate, role, and angle streams for an AWG/control backend.
 
----
+The project is an active RTL prototype. Small Bell/measurement flows have been observed end to end in simulation; large-vector timing, strict self-checking regression, and complete FPGA-top integration are still in progress. Verification scope and remaining gaps are documented in [`docs/verification.md`](docs/verification.md).
 
 ## Architecture
 
-```
-                     RISC-V Assembly Program
-                              │
-                              ▼
-              ┌─────────────────────────────────┐
-              │          vproc_qdisp_top        │
-              │                                 │
-              │  ┌──────────┐   ┌───────────┐   │
-              │  │  Ibex    │   │  vproc    │   │
-              │  │ RISC-V   │─▶│  RVV      │   │
-              │  │  core    │   │  vector   │   │
-              │  └──────────┘   │  core     │   │
-              │                 └─────┬─────┘   │
-              │                       │quantum  │
-              │                       │ stream  │
-              │                 ┌─────▼──────┐  │
-              │   t_cnt ──────▶│  quantum_  │  │
-              │   (free-run)    │ dispatcher │  │
-              │                 └─────┬──────┘  │
-              └────────────────────── │ ────────┘
-                                      │
-                     qubit_gate_o  ───┤  per-qubit gate ID
-                     qubit_valid_o ───┤  one-cycle fire pulse
-                     qubit_ctrl_o  ───┘  control vs. target role
-                                      │
-                                      ▼
-                              AWG / Control Electronics
+```text
+RISC-V program
+      |
+      v
+Ibex -- XIF --> vproc -- quantum stream --> quantum_dispatcher
+                                                |
+                                   per-qubit timed FIFOs
+                                                |
+                                   gate / valid / role --> AWG
 ```
 
-**Ibex** ([github](https://github.com/lowrisc/ibex)) is an open-source RISC-V core (lowRISC) that handles scalar computation and program control flow.
+The full architecture, stream interface, timing contract, capacity terminology, and measurement flow are defined in [`docs/architecture.md`](docs/architecture.md).
 
-**vproc** ([github](https://github.com/vproc/vicuna2_core)) is an RVV-compliant vector core that processes quantum gate instructions element-by-element — one qubit index per clock cycle — producing a streaming output of `(op, elem1, elem2, elem3)` per beat.
+## Quantum ISA
 
-**quantum_dispatcher** (this repo) converts the vproc stream into precise, per-qubit timed firing pulses. It writes each qubit's gate into a dedicated FIFO tagged with a `dispatch_time`. A `time_controller` FSM per qubit watches the global `t_cnt` counter and pulses `qubit_valid_o` for exactly one cycle when the scheduled time arrives. The result is a cycle-accurate gate stream ready to drive an Arbitrary Waveform Generator (AWG).
+The current instruction encoding uses RISC-V **custom-0** opcode `0x0B`. Legacy OP-V encodings remain dual-decoded during migration but are not the canonical encoding for new programs.
 
----
+| Instruction | `funct3` | Main operands | Purpose |
+|---|---:|---|---|
+| `QV.SINGLE` | `000` | GateID, scalar payload, index vector | Single-qubit gate or measurement |
+| `QV.PAIR` | `001` | source/control and target index vectors | Two-qubit gate |
+| `QV.ROT.G` | `010` | scalar angle and index vector | Shared-angle rotation |
+| `QV.ROT.V` | `011` | e32 angle vector and e8 index vector | Per-qubit rotation |
 
-## Quantum Instruction Set
+Instruction fields, LMUL rules, GateIDs, CSR behavior, and compiler constraints are defined only in [`HiSEPQ_ISA_spec.md`](docs/HiSEPQ_ISA_spec.md).
 
-Four new instructions extend the standard RVV opcode space (`funct7 = 1010111`):
+## Quick start
 
-| Instruction  | Operation | Operands |
-|--------------|-----------|----------|
-| `QV.SINGLE`  | Single-qubit gate (H, X, Y, Z, MEASURE, …) | `GateID`, `rs2` (scalar tag), `vs1` (qubit indices) |
-| `QV.PAIR`    | Two-qubit gate (CNOT, SWAP, …) | `vs1` (control indices), `vs2` (target indices) |
-| `QV.ROT.G`   | Single-angle rotation applied to many qubits | `rs2` (angle scalar), `vs1` (qubit indices) |
-| `QV.ROT.V`   | Per-qubit variable rotation | `vs2` (angle vector, e32), `vs1` (qubit indices, e8) |
-
-Each instruction carries a `block_imm` field in bits `[10:7]` that sets the gate firing time:
-
-```
-dispatch_time = t_cnt_at_first_beat + block_imm
-```
-
-Setting `block_imm > VL` guarantees all qubits in the same instruction fire at the **same** `t_cnt` — a hard requirement for AWG-driven multi-qubit gates.
-
-Full ISA encoding details: [`HiSEPQ_ISA_spec.md`](HiSEPQ_ISA_spec.md)
-
----
-
-## Key Features
-
-- **Vectorized qubit control** — a single `QV.PAIR` instruction schedules a two-qubit gate across up to 256 qubit pairs in one program statement.
-- **Cycle-accurate timing** — the `block_imm` field lets software set the exact `t_cnt` at which each gate fires, giving direct control over the AWG trigger timing.
-- **Control / target disambiguation** — the `qubit_ctrl_o` output bus identifies, per qubit per cycle, whether it is the control or target side of a two-qubit gate. The AWG can use this to select the correct pulse shape without any software post-processing.
-- **Mid-circuit measurement** — `GateID = 0x68` on `QV.SINGLE` asserts `qvsg_meas`, halting the CPU and vector pipeline until the external ADC signals `measure_done`. Execution then resumes from the next instruction automatically.
-- **Standard toolchain compatibility** — the scalar program runs unchanged on any RISC-V toolchain; only the four quantum instructions require the HiSEP-Q assembler extension.
-
----
-
-## Repository Layout
-
-```
-HiSEP-Q-2.0/
-├── HiSEPQ_ISA_spec.md          # Full ISA specification
-├── demo.md                     # Bell-state demo walkthrough and observed results
-├── demo/                       # Co-simulation entry point
-│   ├── run.sh                  # Driver (xvlog + xelab + xsim)
-│   ├── elf2mem.sh              # ELF → combined .mem converter
-│   ├── README.md               # Per-case notes
-│   └── *.mem                   # 20 combined memory images (bell / mqtbench / qv)
-└── qvproc_prj/
-    ├── README.md               # Hardware details, build instructions, instruction reference
-    ├── configs/                # vproc configuration packages (SEW, LMUL, VREG type)
-    ├── core/ibex/              # Ibex RISC-V core (vendored)
-    ├── rtl/                    # HiSEP-Q RTL
-    │   ├── vproc_qdisp_top.sv  # Top-level wrapper (Ibex + vproc + dispatcher)
-    │   ├── quantum_dispatcher.v
-    │   ├── timed_fifo.v
-    │   ├── time_controller.v
-    │   └── inst_fifo.v
-    ├── docs/
-    │   └── qsg_measure_spec.md # Mid-circuit measurement flow specification
-    ├── mqtbench_compiled/      # Source .qasm + .s for the mqtbench_*.mem programs
-    └── tb/quantum_cases/
-        ├── vproc_qdisp_bell_tb.v       # Main testbench (used by demo/run.sh)
-        ├── instruction_bell.mem        # Legacy split-format programs
-        ├── data_bell.mem
-        └── vproc_{bell,qpr,qrg,qrv,qsg}_tb.v  # Legacy per-feature testbenches
-```
-
----
-
-## Quick Start: Bell-State Demo
-
-The demo prepares 8 Bell pairs across 16 physical qubits and shows the complete gate stream output with control/target role labels.
+Vivado `xvlog`, `xelab`, and `xsim` must be available on `PATH`:
 
 ```bash
 cd demo
-./run.sh                # default: bell_generic
-./run.sh bell_8pair      # reference Bell demo (16 qubits, VL=8)
-./run.sh --gui bell_8pair # open in Vivado waveform viewer
+./run.sh bell_generic
+./run.sh bell_8pair
+./run.sh --no-compile qv_pair
 ```
 
-**Requirements:** Xilinx `xvlog` / `xelab` / `xsim` on PATH.
+A Verilator path is also available:
 
-Expected AWG output (abridged):
-
-```
-[AWG][t_cnt=50]  valid_mask=0101010101010101   ← Hadamard, control qubits
-[AWG][t_cnt=73]  valid_mask=1111111111111111   ← CNOT, all 16 qubits
-  qubit[00]  gate=0x00  role=CTRL
-  qubit[01]  gate=0x00  role=TGT
-  ...
-[AWG][t_cnt=96]  valid_mask=0101010101010101   ← Measure (CPU halts)
-[AWG][t_cnt=167] valid_mask=1010101010101010   ← Resume marker (post-ADC)
+```bash
+cd demo/verilator
+./run_verilator.sh bell_generic
 ```
 
-Full walkthrough with timing analysis and design notes: [`demo.md`](demo.md)
+Commands and memory-image conventions are in [`demo/README.md`](demo/README.md). Verification scope and the meaning of PASS are in [`docs/verification.md`](docs/verification.md).
 
----
+## Repository layout
 
-## Hardware Details and Build
+```text
+HiSEP-Q-2.0/
+├── README.md                     # project entry and document map
+├── docs/
+│   ├── HiSEPQ_ISA_spec.md        # authoritative instruction-set specification
+│   ├── architecture.md           # hardware and timing contract
+│   ├── verification.md           # tests, evidence, and PASS/FAIL contract
+│   └── tutorial-bell.md          # Bell-state walkthrough
+├── demo/
+│   ├── README.md                 # unified simulation commands and images
+│   ├── run.sh                    # Vivado co-simulation driver
+│   ├── elf2mem.sh                # ELF to combined-memory converter
+│   └── *.mem                     # test-program images
+└── qvproc_prj/
+    ├── README.md                 # Vivado project/rebuild notes
+    ├── rtl/                      # vproc integration and HiSEP-Q RTL
+    ├── configs/                  # vector-core configurations
+    ├── docs/qsg_measure_spec.md  # detailed measurement control specification
+    ├── tb/quantum_cases/         # unified and legacy testbenches
+    └── mqtbench_compiled/        # QASM and assembly sources
+```
 
-See [`qvproc_prj/README.md`](qvproc_prj/README.md) for:
+## Documentation ownership
 
-- Vivado project rebuild instructions (target ZCU216; Next target: Alveo U55C, `xcu55c-fsvh2892-2L-e`)
-- Complete quantum instruction encoding tables
-- `QV.ROT.V` mixed-width LMUL mapping
-- Compiler requirements and known traps
-- Measurement flow (`qvsg_meas` / `measure_done` handshake)
+| Subject | Authoritative document |
+|---|---|
+| Project overview and navigation | [`README.md`](README.md) |
+| ISA encoding and programming contract | [`HiSEPQ_ISA_spec.md`](docs/HiSEPQ_ISA_spec.md) |
+| Hardware/timing architecture | [`docs/architecture.md`](docs/architecture.md) |
+| Verification commands and evidence | [`docs/verification.md`](docs/verification.md) |
+| Demo usage and memory images | [`demo/README.md`](demo/README.md) |
+| Vivado rebuild flow | [`qvproc_prj/README.md`](qvproc_prj/README.md) |
+| Measurement microarchitecture | [`qvproc_prj/docs/qsg_measure_spec.md`](qvproc_prj/docs/qsg_measure_spec.md) |
+
+`CLAUDE.md` and `existing_problem.md` are optional local coordination files and are intentionally not tracked. A clean clone must not depend on them; durable conclusions belong in the tracked documents above.
+
+## Current status
+
+- custom-0 decode for all four instruction classes: implemented;
+- small Bell/measurement stream and AWG activity: observed in simulation;
+- measurement-result CSR `0xCC0`: present in the current working tree, trusted regression pending;
+- complete self-checking suite: open (see verification);
+- large-vector simultaneous dispatch: core burst mechanism implemented; repeated-index and boundary semantics remain open (see verification);
+- complete FPGA wrapper synthesis flow: open (see qvproc project notes).
+
+Detailed gaps and acceptance conditions are maintained in [`docs/verification.md`](docs/verification.md). Local development checkouts may additionally use the ignored `existing_problem.md` as a working issue ledger.
