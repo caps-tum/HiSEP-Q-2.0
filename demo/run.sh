@@ -161,6 +161,14 @@ run_one() {
     if [[ "${mem_file##*/}" == "qv_rot_gateid.mem" ]]; then
         testplusargs+=(--testplusarg "EXPECT_ROT_GATEID")
     fi
+    # Per-case exact AWG scoreboard: demo/<case>.expect, one expected fire per
+    # line (<qubit> <gate_hex> <C|T> <pv> <payload_hex>).
+    local expect_file="${mem_file%.mem}.expect"
+    [[ -f "$expect_file" ]] && testplusargs+=(--testplusarg "AWG_EXPECT=${expect_file}")
+    # Negative tests: PASS when the coprocessor rejects the instruction.
+    case "${mem_file##*/}" in
+        qv_rot_v_illegal_m4.mem|qv_rot_v_illegal_m8.mem) testplusargs+=(--testplusarg "EXPECT_TRAP") ;;
+    esac
 
     if [[ $gui -eq 1 ]]; then
         xsim vproc_qdisp_bell_tb_sim --gui \
@@ -200,4 +208,10 @@ else
     echo ""
     echo "=== Simulation log (last 40 lines) ==="
     tail -40 xsim.log
+    # xsim exits 0 even after $fatal; derive the exit code from the TB verdict
+    # so this script can gate CI.
+    if ! grep -q "RESULT         : PASS" xsim.log; then
+        echo "[sim] testbench reported FAIL -> exiting non-zero"
+        exit 1
+    fi
 fi

@@ -56,6 +56,25 @@ module vproc_qdisp_bell_tb;
     integer rot_gateid_bad_fire_count;
     reg     expect_rot_gateid;
 
+    // Generic per-case AWG scoreboard, loaded from +AWG_EXPECT=<file>.
+    // One line per expected qubit fire: <qubit> <gate_hex> <C|T> <pv> <payload_hex>
+    localparam AWG_EXPECT_MAX = 64;
+    reg          awg_expect_en;
+    integer      awg_expect_count;
+    integer      awg_unexpected_count;
+    integer      exp_qubit   [0:AWG_EXPECT_MAX-1];
+    reg  [6:0]   exp_gate    [0:AWG_EXPECT_MAX-1];
+    reg          exp_ctrl    [0:AWG_EXPECT_MAX-1];
+    reg          exp_pv      [0:AWG_EXPECT_MAX-1];
+    reg  [31:0]  exp_payload [0:AWG_EXPECT_MAX-1];
+    reg          exp_used    [0:AWG_EXPECT_MAX-1];
+
+    // Expected-trap mode for negative tests (+EXPECT_TRAP): PASS when the
+    // coprocessor rejects the instruction, instead of timing out.
+    reg     expect_trap;
+    integer trap_count;
+    integer trap_idle_count;
+
     // -----------------------------------------------------------------
     // Trace-name helper
     // -----------------------------------------------------------------
@@ -241,6 +260,10 @@ module vproc_qdisp_bell_tb;
     // -----------------------------------------------------------------
     wire [31:0] ibex_id_instr;
     assign ibex_id_instr = dut.u_vproc.u_core.u_ibex_core.id_stage_i.instr_rdata_i;
+    // Pulses when the coprocessor rejects a granted instruction (real illegal,
+    // already filtered for the offload-accept race).
+    wire cpi_illegal;
+    assign cpi_illegal = dut.u_vproc.cpi_instr_illegal;
 
     // -----------------------------------------------------------------
     // Memory model logic
@@ -301,6 +324,11 @@ module vproc_qdisp_bell_tb;
     reg [31:0] measure_result_val;
     reg [1023:0] measure_input_file;
     reg [1023:0] awg_output_file;
+    reg [1023:0] awg_expect_file;
+    integer awg_expect_fd;
+    integer awg_expect_scan;
+    reg [8*8-1:0] exp_role_str;
+    integer exp_pv_int;
     integer measure_input_fd;
     integer measure_input_scan;
     integer awg_output_fd;
@@ -476,6 +504,32 @@ module vproc_qdisp_bell_tb;
                                         rot_gateid_bad_fire_count + 1;
                             endcase
                         end
+                        if (awg_expect_en) begin : awg_expect_match
+                            integer ei;
+                            reg matched;
+                            matched = 1'b0;
+                            for (ei = 0; ei < awg_expect_count; ei = ei + 1) begin
+                                if (!matched && !exp_used[ei] &&
+                                    (exp_qubit[ei] == qi) &&
+                                    (exp_gate[ei] == qubit_gate[(qi+1)*GATE_WIDTH-1 -: GATE_WIDTH]) &&
+                                    (exp_ctrl[ei] == qubit_ctrl[qi]) &&
+                                    (exp_pv[ei] == qubit_payload_valid[qi]) &&
+                                    (!exp_pv[ei] ||
+                                     (exp_payload[ei] == qubit_payload[(qi+1)*32-1 -: 32]))) begin
+                                    exp_used[ei] = 1'b1;
+                                    matched = 1'b1;
+                                end
+                            end
+                            if (!matched) begin
+                                awg_unexpected_count = awg_unexpected_count + 1;
+                                $display("[AWG_EXPECT][cycle=%0d] UNEXPECTED fire: qubit=%0d gate=0x%02x role=%0s pv=%0d payload=0x%08x",
+                                         cycle_count, qi,
+                                         qubit_gate[(qi+1)*GATE_WIDTH-1 -: GATE_WIDTH],
+                                         qubit_ctrl[qi] ? "CTRL" : "TGT",
+                                         qubit_payload_valid[qi],
+                                         qubit_payload[(qi+1)*32-1 -: 32]);
+                            end
+                        end
                     end
                 end
                 if (awg_output_fd != 0)
@@ -512,6 +566,12 @@ module vproc_qdisp_bell_tb;
                          cycle_count);
                 capacity_error_count = capacity_error_count + 1;
             end
+
+            if (cpi_illegal) begin
+                trap_count = trap_count + 1;
+                $display("[QDISP_TB][cycle=%0d][TRAP] coprocessor rejected instruction (%0s)",
+                         cycle_count, expect_trap ? "expected" : "UNEXPECTED");
+            end
         end
     end
 
@@ -533,6 +593,8 @@ module vproc_qdisp_bell_tb;
             $display("[QDISP_TB]  FIFO-overflow : %0d", fifo_overflow_count);
             $display("[QDISP_TB]  illegal       : %0d", illegal_count);
             $display("[QDISP_TB]  capacity      : %0d", capacity_error_count);
+            $display("[QDISP_TB]  traps         : %0d%0s", trap_count,
+                     expect_trap ? " (expected)" : "");
             if ((tb_failure_count + invalid_index_count + invalid_pair_count +
                  fifo_overflow_count + illegal_count + capacity_error_count) == 0)
                 $display("[QDISP_TB]  RESULT         : PASS");
@@ -555,7 +617,39 @@ module vproc_qdisp_bell_tb;
     endtask
 
     task check_case_expectations;
+        integer ei;
+        integer missing;
         begin
+            if (awg_expect_en) begin
+                missing = 0;
+                for (ei = 0; ei < awg_expect_count; ei = ei + 1) begin
+                    if (!exp_used[ei]) begin
+                        missing = missing + 1;
+                        $display("[AWG_EXPECT] MISSING fire: qubit=%0d gate=0x%02x role=%0s pv=%0d payload=0x%08x",
+                                 exp_qubit[ei], exp_gate[ei],
+                                 exp_ctrl[ei] ? "CTRL" : "TGT",
+                                 exp_pv[ei], exp_payload[ei]);
+                    end
+                end
+                if ((missing != 0) || (awg_unexpected_count != 0) ||
+                    (qubit_fire_count != awg_expect_count)) begin
+                    tb_failure_count = tb_failure_count + 1;
+                    $display("[FAIL][AWG_EXPECT] expected=%0d fires=%0d missing=%0d unexpected=%0d",
+                             awg_expect_count, qubit_fire_count, missing,
+                             awg_unexpected_count);
+                end else begin
+                    $display("[PASS][AWG_EXPECT] all %0d expected fires matched exactly",
+                             awg_expect_count);
+                end
+            end
+            if (expect_trap && (trap_count == 0)) begin
+                tb_failure_count = tb_failure_count + 1;
+                $display("[FAIL][EXPECT_TRAP] no coprocessor rejection observed");
+            end
+            if (!expect_trap && (trap_count != 0)) begin
+                tb_failure_count = tb_failure_count + 1;
+                $display("[FAIL][TRAP] %0d unexpected coprocessor rejection(s)", trap_count);
+            end
             if (expect_rot_gateid) begin
                 if ((quantum_event_idx != 4) ||
                     (awg_event_idx != 2) ||
@@ -624,6 +718,12 @@ module vproc_qdisp_bell_tb;
         prev_quantum_instr_id_valid = 1'b0;
         rot_gateid_bad_fire_count   = 0;
         expect_rot_gateid           = 1'b0;
+        awg_expect_en               = 1'b0;
+        awg_expect_count            = 0;
+        awg_unexpected_count        = 0;
+        expect_trap                 = 1'b0;
+        trap_count                  = 0;
+        trap_idle_count             = 0;
         measure_done                = 1'b0;
         measure_result               = 32'h0;
         prev_qvsg_meas              = 1'b0;
@@ -711,6 +811,32 @@ module vproc_qdisp_bell_tb;
         repeat (10) @(posedge clk);
         rst = 1'b0;
         expect_rot_gateid = $test$plusargs("EXPECT_ROT_GATEID");
+        expect_trap       = $test$plusargs("EXPECT_TRAP");
+        if ($value$plusargs("AWG_EXPECT=%s", awg_expect_file)) begin
+            awg_expect_fd = $fopen(awg_expect_file, "r");
+            if (awg_expect_fd == 0) begin
+                $display("[QDISP_TB][INIT][FAIL] cannot open AWG expect file: %0s", awg_expect_file);
+                finish_simulation(1);
+            end
+            while (!$feof(awg_expect_fd) && (awg_expect_count < AWG_EXPECT_MAX)) begin
+                awg_expect_scan = $fscanf(awg_expect_fd, "%d %h %s %d %h\n",
+                                          exp_qubit[awg_expect_count],
+                                          exp_gate[awg_expect_count],
+                                          exp_role_str,
+                                          exp_pv_int,
+                                          exp_payload[awg_expect_count]);
+                if (awg_expect_scan == 5) begin
+                    exp_ctrl[awg_expect_count] = (exp_role_str[7:0] == "C");
+                    exp_pv[awg_expect_count]   = (exp_pv_int != 0);
+                    exp_used[awg_expect_count] = 1'b0;
+                    awg_expect_count = awg_expect_count + 1;
+                end
+            end
+            $fclose(awg_expect_fd);
+            awg_expect_en = (awg_expect_count > 0);
+            $display("[QDISP_TB][INIT] AWG expect: %0s (%0d fires)",
+                     awg_expect_file, awg_expect_count);
+        end
 
         // Run until completion or timeout
         for (i = 0; i < max_cycles_limit; i = i + 1) begin
@@ -721,6 +847,17 @@ module vproc_qdisp_bell_tb;
             // Using idle_count here instead of (cycle_count - last_quantum_event_cycle):
             // the cross-block write to last_quantum_event_cycle wasn't visible here
             // under Verilator, so that version never triggered. idle_count works in xsim too.
+            // Expected-trap path: once the rejection is seen, drain briefly and
+            // finish instead of waiting for quantum events that will never come.
+            if (expect_trap && (trap_count != 0)) begin
+                trap_idle_count = trap_idle_count + 1;
+                if (trap_idle_count >= POST_EVENT_IDLE_CYCLES) begin
+                    $display("[QDISP_TB][cycle=%0d][DONE] expected trap observed + %0d idle",
+                             cycle_count, POST_EVENT_IDLE_CYCLES);
+                    finish_simulation(0);
+                end
+            end
+
             if ((quantum_event_idx > 0) &&
                 (idle_count >= POST_EVENT_IDLE_CYCLES)) begin
                 if (resume_stream_seen) begin

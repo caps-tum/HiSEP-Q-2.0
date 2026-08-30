@@ -125,22 +125,32 @@ These observations are a historical baseline; old cycle numbers are not normativ
 
 ### Current full regression snapshot
 
-On 2026-08-27, all 28 tracked `demo/*.mem` images were run through a clean
-Verilator build of the unified testbench. Twenty-one completed with zero
-monitored errors. Seven returned failure:
+On 2026-08-30, all 30 `demo/*.mem` images ran through a clean Verilator build
+of the unified testbench: **29 PASS, 1 FAIL**. The single failure is
+`graphstate_32`, which addresses 32 qubits while the snapshot is fixed at
+`NUM_QUBITS=16` (open item CFG-001). Notable contract changes vs. the older
+2026-08-27 snapshot:
 
-| Group | Result | Interpretation |
-|---|---:|---|
-| Bell demos, `elf_combined`, MQTBench Bell/GHZ/graphstate 8/16/QAOA/QFT/twolocal | 14 pass | End-to-end execution completed with no monitored dispatcher error |
-| block-imm, increasing-time queue, feedback, measfetch, single-measure | 7 pass | Directed behavior completed; exact spot checks are listed below |
-| graphstate32 | fail | Program addresses 32 qubits but the snapshot is fixed at `NUM_QUBITS=16` |
-| `qv_single/qv_pair/qv_rot_g/qv_rot_v` | 4 fail | Vector arithmetic data is not a valid bounded-qubit dispatcher fixture |
-| QRV m4/m8 illegal | 2 fail | Expected illegal instruction occurs, then the empty trap target loops until timeout |
+- the QRV m4/m8 illegal images now PASS: the testbench taps the coprocessor's
+  filtered rejection pulse (`cpi_instr_illegal`), and `+EXPECT_TRAP`
+  (auto-injected by both runners for these images) makes the run terminate
+  cleanly ~220 cycles after the expected rejection instead of timing out;
+- any coprocessor rejection **without** `+EXPECT_TRAP` now fails the run --
+  "unexpected illegal instruction" is part of the pass/fail contract;
+- the four `qv_single/qv_pair/qv_rot_g/qv_rot_v` stream fixtures (vector
+  arithmetic data, never legal qubit streams) moved to
+  `demo/legacy_stream_fixtures/` and are no longer regression cases;
+- `elf_combined.mem` used to "pass" by accident: its `@00000000` marker put
+  the code at byte 0 while Ibex boots at 0x80, so every run booted into
+  mid-program garbage, trapped, and vectored to the real entry. The image
+  and `elf2mem.sh` now place `.text` at the boot address (`@00000020`);
+  the image boots with zero traps.
 
-The standalone dispatcher test passes 23/23 self-checking checks. It covers
+The standalone dispatcher test passes 40/40 self-checking checks. It covers
 valid synchronized bursts, index and pair bounds, atomic pair rejection,
 repeated qubits, identical pair endpoints, timestamp conflicts, legal
-increasing-time queuing, and FIFO-overflow classification.
+increasing-time queuing, capacity-preflight atomic rejection, metadata
+consistency, and bit-exact payload round-trips.
 
 Focused checks reproduced these values:
 
@@ -157,11 +167,11 @@ an illegal instruction and none has a strict output scoreboard. The separate
 four valid cycles and then still expects 16 more, although only 12 remain. These
 legacy/debug benches are not acceptance tests.
 
-Vivado xsim agrees with Verilator on the checked Bell, feedback, and dispatcher
-counts. One runner-level difference remains: Verilator returns non-zero after
-`$fatal`, while xsim prints the fatal message but exits 0. An xsim wrapper must
-convert the testbench FAIL result into a failing command status before that flow
-can be used as a CI gate.
+Vivado xsim agrees with Verilator on the checked Bell, feedback, rotation,
+trap, and dispatcher results. Both runners now return a non-zero exit status
+on FAIL: Verilator via `$fatal`, and `demo/run.sh` by checking the testbench
+verdict in the log (xsim itself still exits 0 after `$fatal`). Both flows can
+gate CI.
 
 ### Rotation directed checks
 
@@ -179,8 +189,12 @@ index-angle pairing (the ROT.V angle buffer shifted during discarded warm-up
 beats; fixed by a tag-based freeze in `vproc_vregunpack.sv`, which also
 allowed `vproc_top.sv`'s LMUL-guessed ROT.V ready-holdoff to be deleted).
 
-Four further ROT.V images extend the pairing coverage, each checked by
-inspecting the AWG log for exact payloads and a single common fire time:
+Four further ROT.V images extend the pairing coverage. Each is checked
+automatically: both runners inject `+AWG_EXPECT=demo/<case>.expect` whenever
+that file exists, and the testbench then requires an exact multiset match of
+qubit fires (one line per expected fire: `<qubit> <gate_hex> <C|T> <pv>
+<payload_hex>`) -- any missing fire, unexpected fire, or count mismatch fails
+the run:
 
 | Image | Configuration | Expected |
 |---|---|---|
@@ -234,22 +248,17 @@ A negative test passes only when its specified error/trap occurs. Timeout must n
 
 The minimum trusted regression above is not complete. The highest-priority gaps are:
 
-- add exact expected-event scoreboards for all four instruction classes, including
-  zero-fire, missing, extra, mistimed, wrong-payload, and wrong-role failures;
-- make the xsim runner return non-zero when the testbench reports FAIL;
-- give m4/m8 negative tests an expected-trap checker and a terminating trap path;
-- separate vector-core stream fixtures from bounded-address dispatcher fixtures,
-  and make `NUM_QUBITS` selectable for the 32-qubit workload;
+- extend `.expect` scoreboards beyond the ROT images to the Bell/measure
+  cases, and add fire-time (`t_cnt`) checking to the format -- the current
+  scoreboard matches qubit/gate/role/payload but not timing;
+- make `NUM_QUBITS` selectable for the 32-qubit workload;
 - fix or archive the stale `qrv_mf2_direct` bench and add checks to the five
   legacy trace benches before treating them as regressions;
 - test burst commit with full per-qubit FIFOs, decreasing timestamps, and legal
   intra-stream bubbles;
 - retain self-checking counter-wrap and bit-exact measurement-result scoreboards;
 - distinguish circuit-equivalent compiler output from documented fallback gates;
-- complete bounded-index ROT coverage: the custom-0 mask residue, ROT.G
-  payload width, and ROT.V index-angle pairing are all fixed and covered
-  (`qv_rot_gateid` scoreboard plus the vl1/chunk/m1/m2 images); remaining
-  gaps are runner-checked scoreboards for the four newer images (currently
-  log-inspected) and register-overlap enumeration.
+- enumerate ROT.V register-group overlap rules (vs1 vs. the implicit vs2
+  LMUL group) with directed legal/illegal cases.
 
 Local development checkouts may use the ignored `existing_problem.md` for owners and work-in-progress notes, but the tracked acceptance contract is this document.

@@ -180,6 +180,14 @@ if [[ $RUN -eq 1 ]]; then
     if [[ "${MEM_FILE##*/}" == "qv_rot_gateid.mem" ]]; then
         SIM_ARGS+=("+EXPECT_ROT_GATEID")
     fi
+    # Per-case exact AWG scoreboard: demo/<case>.expect, one expected fire per
+    # line (<qubit> <gate_hex> <C|T> <pv> <payload_hex>).
+    EXPECT_FILE="${MEM_FILE%.mem}.expect"
+    [[ -f "$EXPECT_FILE" ]] && SIM_ARGS+=("+AWG_EXPECT=${EXPECT_FILE}")
+    # Negative tests: PASS when the coprocessor rejects the instruction.
+    case "${MEM_FILE##*/}" in
+        qv_rot_v_illegal_m4.mem|qv_rot_v_illegal_m8.mem) SIM_ARGS+=("+EXPECT_TRAP") ;;
+    esac
     if [[ -n "$MEASURE_RESULT" ]]; then
         MEASURE_RESULT="${MEASURE_RESULT#0x}"
         MEASURE_RESULT="${MEASURE_RESULT#0X}"
