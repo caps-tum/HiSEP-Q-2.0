@@ -50,7 +50,11 @@ trap 'rm -f "$TMP"' EXIT
 
 awk '
 { sub(/\r$/, "") }                # strip trailing CR (objcopy 2.42 quirk)
-/^@/ { print toupper($0); next }
+# .text is linked at 0x0 but Ibex boots at byte 0x80 (word 0x20); the
+# testbench relocates marker-less images there, but an explicit @00000000
+# would pin the code at word 0 and boot into mid-program garbage. Map the
+# text marker to the boot address; data markers (@00000400) stay absolute.
+/^@/ { if (toupper($0) == "@00000000") { print "@00000020" } else { print toupper($0) }; next }
 {
     for (i = 1; i <= NF; i++)
         print toupper($i)
