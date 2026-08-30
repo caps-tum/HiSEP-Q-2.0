@@ -48,18 +48,20 @@ quantum_valid && quantum_data_ready
 
 `QV.PAIR` produces one primary/control qubit from `elem1` and one secondary/target qubit from `elem2` per accepted beat. The role mapping is exported through `qubit_ctrl_o`.
 
-The raw stream can carry scalar or angle data in `quantum_elem2`, but each timed
-FIFO currently stores only `{dispatch_time, role, GateID}`. No payload or
-instruction-class tag reaches the fire-time AWG boundary. Fixed gates work with
-a globally unique GateID; parameterized rotations remain incomplete.
+The dispatcher stores `{payload, payload_valid, role, GateID}` with each
+per-qubit timed command. `QV.ROT.G` carries one scalar 32-bit payload to every
+selected qubit; `QV.ROT.V` carries one 32-bit payload per selected qubit. The
+payload is opaque to RTL and reaches the AWG-facing output unchanged. GateIDs
+use one global namespace, so no separate instruction-class tag is required.
 
 ## Addressing and capacity
 
 The instruction stream uses 8-bit direct qubit indices in the range `0..255`. The number of actual output channels is the `NUM_QUBITS` parameter:
 
-- wrapper default: 8;
-- unified co-simulation configuration: 16;
-- larger physical configurations have not yet been demonstrated by a self-checking synthesis/simulation regression.
+- wrapper default: 8; unified co-simulation default: 16;
+- both simulation runners accept `--qubits N` (elaboration-time, separate build per N);
+- simulation-verified: 16 (full regression), 32 (graphstate workload), 64 (smoke), and 256 with a self-checking fire on qubit index 255 (`qv_rot_idx255`);
+- synthesis targets the 16-qubit configuration; larger configurations are simulation-verified only, not hardware-demonstrated.
 
 Architectural index width, configured physical outputs, and verified capacity are different quantities. A claim such as "256 qubits" is not considered verified until an appropriate `NUM_QUBITS` configuration passes the criteria in [`verification.md`](verification.md).
 
@@ -96,23 +98,33 @@ VL=128 `qv_pair` image is not positive evidence for this property: with the
 unified testbench `NUM_QUBITS=16`, most indices are out of range and the case
 correctly fails.
 
-The core race is resolved. The repeated-qubit/conflict policy that was previously undefined here has since been decided and implemented (user-confirmed, 2026-08-26): repeating a qubit within one instruction, or scheduling the same qubit at the same absolute `dispatch_time` from different instructions, is illegal and rejects the whole accumulated instruction (zero fires). The same qubit at different `dispatch_time`s is legal and queues normally. This is verified by the standalone `quantum_dispatcher_tb.v` regression (23/23 checks) and by directed `.mem` fixtures (`qv_diff_time_queue.mem` for the legal case).
+The core race is resolved. The repeated-qubit/conflict policy that was previously undefined here has since been decided and implemented (user-confirmed, 2026-08-26): repeating a qubit within one instruction, or scheduling the same qubit at the same absolute `dispatch_time` from different instructions, is illegal and rejects the whole accumulated instruction (zero fires). The same qubit at different `dispatch_time`s is legal and queues normally. This is verified by the standalone `quantum_dispatcher_tb.v` regression (40/40 checks) and by directed `.mem` fixtures (`qv_diff_time_queue.mem` for the legal case).
+
+Before a burst is committed, the dispatcher checks every touched per-qubit
+FIFO. If any destination cannot accept the command, the whole instruction is
+atomically rejected with `capacity_error_o`; no subset is written. The current
+policy is fail-fast rather than wait/retry.
 
 Remaining open items:
 
-- burst behavior with full per-qubit FIFOs needs a directed test (a burst can currently partially execute if one destination FIFO is full and another is not -- no burst-wide capacity preflight exists);
 - the 8-cycle idle threshold needs a proven bound against every legal intra-stream bubble;
 - `block_imm=0` must leave enough FIFO/controller setup margin;
-- invalid-index/invalid-pair/FIFO-overflow/illegal pulses are separately counted.
-  The unified testbench calls `$fatal` on failure; Verilator returns non-zero,
-  while the current xsim runner still exits zero. There is no per-case
-  expected-error scoreboard. Per-qubit queues are FIFO-ordered rather than
-  time-sorted, so a later-enqueued earlier timestamp can be blocked behind the
-  queue head and fire late.
+- invalid-index, invalid-pair, capacity, and illegal pulses are separately
+  counted. The old per-qubit FIFO-overflow output remains for compatibility,
+  but capacity preflight makes it unreachable in normal dispatcher operation;
+- per-qubit queues are FIFO-ordered rather than time-sorted, so a
+  later-enqueued earlier timestamp can be blocked behind the queue head and
+  fire late.
+
+The unified testbench calls `$fatal` on failure. Verilator returns non-zero
+directly; `demo/run.sh` checks the xsim log verdict and also returns non-zero.
+ROT cases with `.expect` files use exact per-fire scoreboards, and the m4/m8
+negative ROT.V cases use an expected-trap checker. The current `.expect`
+format does not retain expected `t_cnt` values.
 
 ## Timed FIFO and controller
 
-Each per-qubit entry contains `{dispatch_time, role, GateID}`. The time controller follows `IDLE -> WAIT -> ISSUE`. The WAIT expiration test is a modular, wraparound-safe comparison, not a plain unsigned one:
+Each per-qubit entry contains `{dispatch_time, payload, payload_valid, role, GateID}`. The time controller follows `IDLE -> WAIT -> ISSUE`. The WAIT expiration test is a modular, wraparound-safe comparison, not a plain unsigned one:
 
 ```text
 time_since_target = (t_cnt + 1) - t_inst    // modular subtraction, wraps by design

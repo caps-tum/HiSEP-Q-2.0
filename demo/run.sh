@@ -38,6 +38,7 @@ GUI=0
 NO_COMPILE=0
 ELF_FILE=""
 CASE_NAME="bell_generic"
+QUBITS=""
 
 # ── argument parsing ────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -47,6 +48,9 @@ while [[ $# -gt 0 ]]; do
         --elf)
             ELF_FILE="$2"; shift
             ;;
+        --qubits)
+            QUBITS="$2"; shift
+            ;;
         --*)
             echo "Unknown option: $1" >&2; exit 1 ;;
         *)
@@ -54,6 +58,23 @@ while [[ $# -gt 0 ]]; do
     esac
     shift
 done
+
+# NUM_QUBITS is an elaboration-time parameter: each value gets its own xsim
+# snapshot. --qubits N overrides; the 32-qubit graphstate workload defaults
+# to 32 automatically.
+case "${CASE_NAME}" in
+    mqtbench_graphstate_32*) : "${QUBITS:=32}" ;;
+    qv_rot_idx255*)          : "${QUBITS:=256}" ;;
+esac
+QUBITS="${QUBITS:-16}"
+[[ "$QUBITS" =~ ^[1-9][0-9]*$ ]] || { echo "Error: --qubits must be a positive integer" >&2; exit 1; }
+SNAPSHOT="vproc_qdisp_bell_tb_sim"
+XELAB_GENERICS=()
+if [[ "$QUBITS" -ne 16 ]]; then
+    SNAPSHOT="vproc_qdisp_bell_tb_sim_q${QUBITS}"
+    XELAB_GENERICS=(-generic_top "NUM_QUBITS=${QUBITS}")
+    echo "  NUM_QUBITS=${QUBITS} (snapshot: ${SNAPSHOT})"
+fi
 
 echo "=== HiSEP-Q Co-Sim ==="
 echo "  Project : ${PRJ_DIR}"
@@ -146,7 +167,8 @@ compile_and_elab() {
     xelab \
         --incr --debug typical --relax \
         -L xil_defaultlib \
-        --snapshot vproc_qdisp_bell_tb_sim \
+        ${XELAB_GENERICS[@]+"${XELAB_GENERICS[@]}"} \
+        --snapshot "${SNAPSHOT}" \
         xil_defaultlib.vproc_qdisp_bell_tb \
         2>&1 | tee xelab.log
 }
@@ -171,10 +193,10 @@ run_one() {
     esac
 
     if [[ $gui -eq 1 ]]; then
-        xsim vproc_qdisp_bell_tb_sim --gui \
+        xsim "${SNAPSHOT}" --gui \
             "${testplusargs[@]}"
     else
-        xsim vproc_qdisp_bell_tb_sim --runall \
+        xsim "${SNAPSHOT}" --runall \
             "${testplusargs[@]}" \
             2>&1 | tee "${log_file}"
     fi

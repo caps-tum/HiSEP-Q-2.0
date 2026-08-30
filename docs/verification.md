@@ -125,11 +125,19 @@ These observations are a historical baseline; old cycle numbers are not normativ
 
 ### Current full regression snapshot
 
-On 2026-08-30, all 30 `demo/*.mem` images ran through a clean Verilator build
-of the unified testbench: **29 PASS, 1 FAIL**. The single failure is
-`graphstate_32`, which addresses 32 qubits while the snapshot is fixed at
-`NUM_QUBITS=16` (open item CFG-001). Notable contract changes vs. the older
-2026-08-27 snapshot:
+On 2026-08-30, all 31 `demo/*.mem` images ran through clean Verilator builds
+of the unified testbench: **31/31 PASS**. Notable contract changes vs. the
+older 2026-08-27 snapshot:
+
+- `NUM_QUBITS` is selectable per build: `--qubits N` on both runners
+  (elaboration-time -- per-N Verilator build directory / xsim snapshot,
+  default 16). `mqtbench_graphstate_32` and `qv_rot_idx255` auto-select
+  32/256 by name. Verified configurations: 16 (full suite), 32
+  (graphstate, formerly the one red case), 64 (scoreboarded rot smoke),
+  and 256 -- where `qv_rot_idx255.mem` fires qubit index 255 with an exact
+  payload on both simulators, the first simulation evidence at the
+  architectural ceiling. Synthesis still targets the default 16; larger
+  configurations are simulation-verified only.
 
 - the QRV m4/m8 illegal images now PASS: the testbench taps the coprocessor's
   filtered rejection pulse (`cpi_instr_illegal`), and `+EXPECT_TRAP`
@@ -202,6 +210,7 @@ the run:
 | `qv_rot_chunk.mem` | mf2, VL=6 | q4-q9 fire together with `0x111..0x666`, crossing the 128-bit vs2 chunk boundary |
 | `qv_rot_m1.mem` | m1, VL=2 | q2/q3 fire with `0xaaa`/`0xbbb` |
 | `qv_rot_m2.mem` | m2, VL=2 (vs1=v2, vs2=v8) | q2/q3 fire with `0xaaa`/`0xbbb` |
+| `qv_rot_idx255.mem` | mf2, VL=1, `NUM_QUBITS=256` (auto) | q255 fires once with `0x00000abc` |
 
 Both simulators agree on all of these. No LMUL-specific tuning remains in the
 ready path; the alignment window is derived from pipeline tags and
@@ -251,7 +260,6 @@ The minimum trusted regression above is not complete. The highest-priority gaps 
 - extend `.expect` scoreboards beyond the ROT images to the Bell/measure
   cases, and add fire-time (`t_cnt`) checking to the format -- the current
   scoreboard matches qubit/gate/role/payload but not timing;
-- make `NUM_QUBITS` selectable for the 32-qubit workload;
 - fix or archive the stale `qrv_mf2_direct` bench and add checks to the five
   legacy trace benches before treating them as regressions;
 - test burst commit with full per-qubit FIFOs, decreasing timestamps, and legal

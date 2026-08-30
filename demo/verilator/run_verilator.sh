@@ -27,10 +27,12 @@ DV_DIR="${IBEX_DIR}/vendor/lowrisc_ip/dv/sv/dv_utils"
 OBJ_DIR="${SCRIPT_DIR}/obj_dir"
 BIN="${OBJ_DIR}/sim_hisepq"
 TOP="vproc_qdisp_bell_tb"
+GEN_ARGS=()
 
 BUILD=1
 RUN=1
 CASE_NAME="bell_generic"
+QUBITS=""
 MEM_FILE=""
 MEASURE_RESULT=""
 MEASURE_FILE=""
@@ -43,6 +45,7 @@ while [[ $# -gt 0 ]]; do
         --build-only) RUN=0 ;;
         --no-build)   BUILD=0 ;;
         --mem)            MEM_FILE="$2"; shift ;;
+        --qubits)         QUBITS="$2"; shift ;;
         --measure-result) MEASURE_RESULT="$2"; shift ;;
         --measure-file)   MEASURE_FILE="$2"; shift ;;
         --measure-delay)  MEASURE_DELAY="$2"; shift ;;
@@ -53,6 +56,22 @@ while [[ $# -gt 0 ]]; do
     esac
     shift
 done
+
+# NUM_QUBITS is an elaboration-time parameter: each value gets its own build
+# directory (obj_dir for the default 16, obj_dir_qN otherwise). --qubits N
+# overrides; the 32-qubit graphstate workload defaults to 32 automatically.
+case "$(basename "${MEM_FILE:-$CASE_NAME}")" in
+    mqtbench_graphstate_32*) : "${QUBITS:=32}" ;;
+    qv_rot_idx255*)          : "${QUBITS:=256}" ;;
+esac
+QUBITS="${QUBITS:-16}"
+[[ "$QUBITS" =~ ^[1-9][0-9]*$ ]] || { echo "ERROR: --qubits must be a positive integer" >&2; exit 1; }
+if [[ "$QUBITS" -ne 16 ]]; then
+    OBJ_DIR="${SCRIPT_DIR}/obj_dir_q${QUBITS}"
+    BIN="${OBJ_DIR}/sim_hisepq"
+    GEN_ARGS+=("-GNUM_QUBITS=${QUBITS}")
+    echo "=== [config] NUM_QUBITS=${QUBITS} (build dir: $(basename "${OBJ_DIR}")) ==="
+fi
 
 # Same file list as demo/run.sh. The latch register file is left out: Verilator
 # can't simulate latches, and Ibex uses the FF regfile here anyway.
@@ -144,6 +163,8 @@ if [[ $BUILD -eq 1 ]]; then
         -Wno-fatal \
         --timescale 1ns/1ps \
         --x-initial unique --x-assign unique \
+        --unroll-count 1024 \
+        ${GEN_ARGS[@]+"${GEN_ARGS[@]}"} \
         -CFLAGS "-O2" \
         -I"${PRIM_DIR}" -I"${DV_DIR}" \
         "${SCRIPT_DIR}/hisepq.vlt" \

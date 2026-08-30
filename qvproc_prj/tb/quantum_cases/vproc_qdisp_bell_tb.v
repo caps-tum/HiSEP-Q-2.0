@@ -447,7 +447,7 @@ module vproc_qdisp_bell_tb;
         if (!rst) begin
             if (|qubit_valid) begin
                 // Summary line: full valid mask and gate bus
-                $display("[AWG][t_cnt=%0d] valid_mask=%016b  (cycle=%0d)",
+                $display("[AWG][t_cnt=%0d] valid_mask=%b  (cycle=%0d)",
                          t_cnt, qubit_valid, cycle_count);
                 // Per-qubit detail
                 for (qi = 0; qi < NUM_QUBITS; qi = qi + 1) begin
@@ -538,7 +538,7 @@ module vproc_qdisp_bell_tb;
             end
 
             if (|qubit_error) begin
-                $display("[QDISP_TB][cycle=%0d][ERROR][FIFO_OVERFLOW] qubits=%016b",
+                $display("[QDISP_TB][cycle=%0d][ERROR][FIFO_OVERFLOW] qubits=%b",
                          cycle_count, qubit_error);
                 fifo_overflow_count = fifo_overflow_count + 1;
             end
