@@ -315,30 +315,8 @@ module vproc_core import vproc_pkg::*; #(
 
     // Stall instruction offloading in case the instruction ID is already used
     // by another instruction which is not complete
-    logic instr_valid, issue_id_used; // quantum qvproc
-    logic issue_cfg_instr; // quantum qvproc
-    logic issue_cfg_ready; // quantum qvproc
-    // assign instr_valid = xif_issue_if.issue_valid & ~issue_id_used & source_xreg_valid;
-    // The original logic allowed non-configuration vector instructions to reach the decoder even
-    // while the current vector configuration was still invalid after reset or during a config transition.
-    // That created a transient illegal-instruction report for dependent vector loads before `vtype`
-    // had become valid. Keep the original assignment commented for reference and gate non-config
-    // instructions until the vector configuration is valid. // quantum qvproc
-    // assign issue_cfg_instr = (xif_issue_if.issue_req.instr[6:0] == 7'h73) |
-    //                          ((xif_issue_if.issue_req.instr[6:0] == 7'h57) &
-    //                           (xif_issue_if.issue_req.instr[14:12] == 3'b111));
-    // assign issue_cfg_ready = cfg_valid | issue_cfg_instr;
-    // assign instr_valid = xif_issue_if.issue_valid & ~issue_id_used & source_xreg_valid & issue_cfg_ready;
-    // The configuration-valid gating above prevented the transient illegal-report path, but it also
-    // created a deadlock: with `cfg_valid=0`, non-config instructions could no longer move far enough
-    // for the system to recover configuration progress. Keep that stronger gating commented for
-    // reference and restore the original non-blocking issue behavior; the top-level illegal-report
-    // fix in `vproc_top` is sufficient to suppress the false illegal trap. // quantum qvproc
-    assign issue_cfg_instr = (xif_issue_if.issue_req.instr[6:0] == 7'h73) | // quantum qvproc
-                             ((xif_issue_if.issue_req.instr[6:0] == 7'h57) & // quantum qvproc
-                              (xif_issue_if.issue_req.instr[14:12] == 3'b111)); // quantum qvproc
-    assign issue_cfg_ready = cfg_valid | issue_cfg_instr; // quantum qvproc
-    assign instr_valid = xif_issue_if.issue_valid & ~issue_id_used & source_xreg_valid; // quantum qvproc
+    logic instr_valid, issue_id_used;
+    assign instr_valid = xif_issue_if.issue_valid & ~issue_id_used & source_xreg_valid;
 
     op_unit instr_unit;
     op_mode instr_mode;
@@ -372,13 +350,15 @@ module vproc_core import vproc_pkg::*; #(
     assign dec_data_d.vl_0       = vl_0_q;
     assign dec_data_d.lmul       = lmul_q; // quantum qvproc
     assign dec_data_d.quantum_elem2_raw = 32'b0; // quantum qvproc
-    // SINGLE and PAIR: elem3[31:25]=GateID, elem3[11:7]=block_imm.
+    // All four quantum classes share one elem3 layout: [31:25]=GateID,
+    // [11:7]=block_imm. The class itself travels in quantum_op, not elem3.
     assign dec_data_d.quantum_elem3_raw = ((instr_unit == UNIT_ELEM) &&
                                           ((instr_mode.elem.op == ELEM_QSINGLE) ||
-                                           (instr_mode.elem.op == ELEM_QPAIR))) ?
+                                           (instr_mode.elem.op == ELEM_QPAIR)   ||
+                                           (instr_mode.elem.op == ELEM_QROTG)   ||
+                                           (instr_mode.elem.op == ELEM_QROTV))) ?
                                           {xif_issue_if.issue_req.instr[31:25], 13'b0000000000000, xif_issue_if.issue_req.instr[11:7], 7'b0000000} :
-                                          (((instr_unit == UNIT_ELEM) && ((instr_mode.elem.op == ELEM_QROTG) || (instr_mode.elem.op == ELEM_QROTV))) ?
-                                          {17'b00000000000000000, xif_issue_if.issue_req.instr[14:7], 7'b0000000} : 32'b0); // quantum qvproc
+                                          32'b0; // quantum qvproc
     assign dec_data_d.unit       = instr_unit;
     assign dec_data_d.mode       = instr_mode;
     assign dec_data_d.pend_load  = (instr_unit == UNIT_LSU) & ~instr_mode.lsu.store;
@@ -389,15 +369,6 @@ module vproc_core import vproc_pkg::*; #(
     // vset[i]vl[i] instruction that will change the configuration in the next
     // cycle and any subsequent offloaded instruction must be validated w.r.t.
     // the new configuration.
-    // assign xif_issue_if.issue_ready          = dec_ready & ~issue_id_used & source_xreg_valid;
-    // The original ready signal could grant a non-config vector instruction while the current
-    // vector configuration was still invalid, which then caused `accept=0` and surfaced as an
-    // illegal instruction in the scalar core. Keep the original assignment commented for
-    // reference and stall those instructions until the configuration is valid. // quantum qvproc
-    // assign xif_issue_if.issue_ready          = dec_ready & ~issue_id_used & source_xreg_valid & issue_cfg_ready;
-    // The configuration-valid stall above can deadlock the early boot/configuration window. Keep it
-    // commented for reference and restore the original ready behavior now that false illegal traps are
-    // filtered at the top level. // quantum qvproc
     assign xif_issue_if.issue_ready          = dec_ready & ~issue_id_used & source_xreg_valid; // quantum qvproc
 
     assign xif_issue_if.issue_resp.accept    = dec_valid;

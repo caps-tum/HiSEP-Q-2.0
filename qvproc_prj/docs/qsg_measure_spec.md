@@ -106,8 +106,11 @@ When `measure_done_i` is asserted:
 4. release offload and dispatch pauses;
 5. allow subsequent Ibex and vproc work to continue.
 
-Only the latest 32-bit result is retained. Result-to-qubit mapping is a software
-and backend convention; the RTL stores the supplied word without decoding it.
+Only the latest 32-bit result is retained. Bit `k` corresponds to element `k`
+of the current measurement vector, which need not be physical qubit `k`. The
+current feedback interface therefore supports at most 32 measured elements per
+transaction; larger measurements must be split. The RTL stores the supplied
+word without decoding it.
 
 ## Verification obligations
 

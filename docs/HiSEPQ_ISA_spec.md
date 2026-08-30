@@ -33,7 +33,7 @@ RVV encodings — only the quantum gate instructions live in the custom opcode.
 ### 2.1 Current Implementation: Direct Index Mode
 
 Qubit indices are stored as **8-bit unsigned integers** directly in vector registers (v0–v31).
-Each active vector element contains one physical qubit index in the range `[0, 127]`.
+Each active vector element contains one physical qubit index in the range `[0, 255]`.
 The number of qubits processed per instruction is determined by the `vsetvli` configuration
 (`SEW=8`, `LMUL`).
 
@@ -41,15 +41,15 @@ The number of qubits processed per instruction is determined by the `vsetvli` co
 Physical Qubit ID = Vector Element[7:0]
 ```
 
-The **MSB (bit 7)** of each element is currently unused and should be written as zero.
+All eight bits are part of the direct index; bit 7 is not a mask bit.
 
 ### 2.2 Block Immediate Field
 
 The `Block_imm` field (instruction bits `[11:7]`) is a **5-bit scheduling/metadata field**
 occupying the R-type `rd` slot (quantum instructions do not write back to a `rd` register).
-It is exported as part of `elem3` and is used by the programmer to carry a software-defined tag
-(e.g., a timestamp, circuit layer ID, or measurement token) to the quantum backend, and to
-compute the per-qubit dispatch time. It does **not** perform address translation in the current RTL.
+It is exported on the raw `elem3` stream and used by the dispatcher to compute
+the per-qubit dispatch time. It is not present on the final per-qubit AWG output
+and does **not** perform address translation.
 
 ```
 elem3[11:7] = Block_imm[4:0]
@@ -58,23 +58,17 @@ elem3[11:7] = Block_imm[4:0]
 > **Note:** the standalone mask bit `m` that previously occupied bit `[11]` has been removed;
 > the full `[11:7]` field is now a single 5-bit immediate (RFC #3 / custom-0 migration).
 
-> **Scheduling transition:** the original dispatcher interpreted this as an
-> offset from the first stream beat. That failed for long streams. The current
-> working tree accumulates one instruction and creates
+> **Scheduling:** the dispatcher accumulates one instruction and creates
 > `dispatch_time = t_cnt_at_flush + offset` only when a different instruction ID
-> arrives or the pending stream reaches the idle-flush threshold. The core
-> large-VL race is resolved, while repeated-index and flush-bound semantics
-> still require definition and directed tests; see
+> arrives or the pending stream reaches the idle-flush threshold. Repeated
+> qubits within one instruction and equal-time conflicts are illegal; see
 > [`docs/architecture.md`](architecture.md). The 5-bit field is an offset,
 > not a 5-bit absolute timestamp.
 
-> **[TODO]** A hierarchical addressing extension is planned:
-> ```
-> Physical Qubit ID = (Block_imm × 128) + Vector Element[6:0]
-> ```
-> This would allow a single instruction to address up to 128 qubits within a 128-qubit block,
-> and the 5-bit `Block_imm` would select among up to 32 blocks (4096 qubits total).
-> The MSB (bit 7) of each vector element would then be reserved for masking or validity.
+> **[TODO]** Hierarchical addressing would require a new encoding decision. The
+> current `Block_imm` is already the scheduling offset and all eight vector-element
+> bits are used by direct indexing; the earlier `Block_imm × 128 + element[6:0]`
+> proposal is not implemented.
 
 ---
 
@@ -82,18 +76,18 @@ elem3[11:7] = Block_imm[4:0]
 
 | Register Type      | Role           | Used by                        | Description                                                              |
 |--------------------|----------------|--------------------------------|--------------------------------------------------------------------------|
-| Vector (`SEW=8`)   | `v_target`     | `QV.SINGLE`, `QV.PAIR`, `QV.ROT.G`, `QV.ROT.V` | 8-bit qubit indices of target qubits.                |
-| Vector (`SEW=8`)   | `v_source`     | `QV.PAIR`                      | 8-bit qubit indices of control/source qubits.                            |
+| Vector (`SEW=8`)   | `v_index`      | `QV.SINGLE`, `QV.ROT.G`, `QV.ROT.V` | 8-bit qubit indices. |
+| Vector (`SEW=8`)   | `v_control`    | `QV.PAIR` | Control indices in `vs1`. |
+| Vector (`SEW=8`)   | `v_target`     | `QV.PAIR` | Target indices in `vs2`. |
 | Vector (`SEW=32`)  | `v_angle`      | `QV.ROT.V`                     | Per-qubit 32-bit fixed-point rotation angles (one per element).          |
 | Scalar (Integer)   | `rs2` (angle)  | `QV.ROT.G`                     | Global 32-bit fixed-point rotation angle applied uniformly to all targets.|
-| Scalar (Integer)   | `rs2` (payload)| `QV.SINGLE`                    | 32-bit scalar tag or timestamp forwarded to the backend on `elem2`.      |
+| Scalar (Integer)   | `rs2` (payload)| `QV.SINGLE`                    | 32-bit scalar value exported on raw `elem2`. |
 | Vector (`SEW=8`)   | `v_single`     | `QV.SINGLE` (Mask Mode)        | Dense bitmask buffer: bit `j` targets qubit `j`. **[TODO]**             |
 
-> **Angle encoding**: Rotation angles are represented as **32-bit fixed-point** values in integer
-> GPRs. The hardware treats the 32-bit payload as opaque and forwards it to the quantum backend
-> via `elem2`; the backend is responsible for interpreting the fixed-point encoding into a physical
-> rotation angle. The specific fixed-point format (e.g., Q16.16, or full-scale mapping to 2π) is
-> a software/backend convention and should be documented at the system integration level.
+> **Angle encoding contract:** rotation angles are opaque 32-bit values. Their
+> numerical format is a software/backend convention. The current RTL does not yet
+> carry this full contract to the AWG boundary; the deviations are listed in the
+> rotation sections below.
 
 ---
 
@@ -127,15 +121,30 @@ distinguishes the instruction class (`000`=QV.SINGLE, `001`=QV.PAIR, `010`=QV.RO
 |----------|-------------|--------------------------------|
 | `000`    | `QV.SINGLE` | GateID (H=`0x64`, MEASURE=`0x68`, resume=`0x78`) |
 | `001`    | `QV.PAIR`   | GateID (CNOT=`0x66`)           |
-| `010`    | `QV.ROT.G`  | reserved (`0`)                 |
-| `011`    | `QV.ROT.V`  | reserved (`0`)                 |
+| `010`    | `QV.ROT.G`  | GateID (RX=`0x6a`, RY=`0x6c`, RZ=`0x6e`; assigned 2026-08-27) |
+| `011`    | `QV.ROT.V`  | GateID (same RX/RY/RZ values as ROT.G) |
+
+GateID is one **global** namespace shared across all four `funct3` classes --
+a value is not reused for a different gate in a different class, and the
+AWG-facing interface never carries a class tag, only the bare GateID. RX/RY/RZ
+continue the existing `0x6x` numbering used by H/CNOT/MEASURE, leaving
+`0x6b`/`0x6d`/`0x6f`/`0x70`-`0x77` free for future single-axis or two-qubit
+gates and avoiding the legacy placeholder values `0x7d`-`0x7f`. X/Y/Z/SWAP
+(GATE-001 backlog) are not yet assigned.
+
+Canonical custom-0 ROT.G/ROT.V correctly forward `[31:25]` as GateID as of
+2026-08-27 (ROT-004); earlier revisions of this document said these bits were
+"reserved" and that the decoder read bit 25 as an RVV mask control -- both are
+now stale. `elem3[31:25]`=GateID/`elem3[11:7]`=Block_imm for all four classes
+uniformly; see `vproc_core.sv`'s single shared elem3-packing condition.
 
 ---
 
 #### `QV.SINGLE` — Single-Qubit Gate
 
-Applies a single-qubit gate to the qubits listed in `vs1`. The 32-bit scalar payload from `rs2`
-is forwarded to the quantum backend on the `elem2` channel (e.g., as a software tag or timestamp).
+Applies a single-qubit gate to the qubits listed in `vs1`. The 32-bit scalar
+payload from `rs2` is exported on the raw `elem2` stream. The timed dispatcher
+does not queue or emit this payload.
 
 ```
  31      25   24    20   19    15   14  12   11     7   6       0
@@ -170,19 +179,23 @@ is forwarded to the quantum backend on the `elem2` channel (e.g., as a software 
 
 #### `QV.PAIR` — Two-Qubit Gate
 
-Applies a two-qubit gate to element-wise pairs from `vs2` (source/control) and `vs1` (target).
+Applies a two-qubit gate to element-wise pairs from `vs1` (control) and `vs2` (target).
 
 ```
  31      25   24    20   19    15   14  12   11     7   6       0
 +---------+----------+----------+--------+----------+---------+
-|  GateID | vs2(src) | vs1(tgt) | 001(P) | Block_imm | 0001011 |
+|  GateID | vs2(tgt) | vs1(ctrl)| 001(P) | Block_imm | 0001011 |
 +---------+----------+----------+--------+----------+---------+
 ```
 
 **Exported signals per active element:**
-- `elem1` — 8-bit target qubit index from `vs1`
-- `elem2` — 8-bit source qubit index from `vs2`
+- `elem1` — 8-bit control qubit index from `vs1`
+- `elem2` — 8-bit target qubit index from `vs2`
 - `elem3` — GateID and Block_imm metadata
+
+The mapping is checked by the Bell co-simulation: `elem1`/`vs1` fires with
+`role=CTRL`, and `elem2`/`vs2` fires with `role=TGT`. Test evidence belongs in
+[`verification.md`](verification.md).
 
 <!-- **Implemented GateIDs:**
 
@@ -202,23 +215,27 @@ an **integer** scalar register `rs2`.
 ```
  31      25   24    20   19    15   14  12   11     7   6       0
 +---------+----------+----------+--------+----------+---------+
-|   Res   | rs2(ang) | vs1(tgt) | 010(gr)| Block_imm | 0001011 |
+| GateID  | rs2(ang) | vs1(tgt) | 010(gr)| Block_imm | 0001011 |
 +---------+----------+----------+--------+----------+---------+
 ```
 
 **Exported signals per active element:**
 - `elem1` — 8-bit qubit index from `vs1`
-- `elem2` — 32-bit scalar angle from `rs2`
-- `elem3` — Block_imm metadata
+- `elem2` — architecturally a 32-bit scalar angle from `rs2`
+- `elem3[31:25]` — GateID (RX=`0x6a`/RY=`0x6c`/RZ=`0x6e`); `elem3[11:7]` — Block_imm
 
 > **Compiler note**: It is recommended to reserve a dedicated integer GPR for the `rs2` angle
 > operand to avoid scheduling conflicts with normal scalar traffic. The ABI register `a5` or
 > a callee-saved register is a reasonable candidate; verify against hazard control timing.
 
-> **Angle encoding**: The rotation angle in `rs2` is a **32-bit fixed-point** value. The hardware
-> forwards the full 32-bit payload to the quantum backend via `elem2` without interpretation;
-> the backend converts the fixed-point value to a physical rotation angle. The fixed-point format
-> (e.g., Q16.16 or a full-scale 2π mapping) is a system-level software convention.
+> **[KNOWN RTL GAP, updated 2026-08-27]** GateID now reaches the AWG boundary
+> for ROT.G (ROT-004, fixed) -- `qubit_gate_o` correctly shows RX/RY/RZ. The
+> **angle** does not yet: with the normal e8 index configuration, the current
+> `vproc_elem.sv` export still slices ROT.G `elem2` to eight bits, and
+> `quantum_dispatcher.v` still drops `elem2` rather than queueing it with the
+> timed gate. Full 32-bit scalar rotation is therefore still not implemented
+> at the AWG boundary -- only the gate identity is, not the parameter. See
+> ROT-003 (implementation-order steps 4-6, not yet done).
 
 > **[TODO]** The internal placeholder computation uses only `rs2[4:0]` as a shift amount for
 > `rotl_elem`. This will be replaced by proper angle forwarding once the backend interface is
@@ -235,14 +252,21 @@ This is a **mixed-width instruction**: `vs1` uses `SEW=8` (qubit indices) and `v
 ```
  31      25   24    20   19    15   14  12   11     7   6       0
 +---------+----------+----------+--------+----------+---------+
-|   Res   | vs2(ang) | vs1(tgt) | 011(vr)| Block_imm | 0001011 |
+| GateID  | vs2(ang) | vs1(tgt) | 011(vr)| Block_imm | 0001011 |
 +---------+----------+----------+--------+----------+---------+
 ```
 
 **Exported signals per active element:**
 - `elem1` — 8-bit qubit index from `vs1`
-- `elem2` — 32-bit angle from `vs2`
-- `elem3` — Block_imm metadata
+- `elem2` — 32-bit angle from `vs2` on the raw stream
+- `elem3[31:25]` — GateID (RX=`0x6a`/RY=`0x6c`/RZ=`0x6e`, same values as ROT.G); `elem3[11:7]` — Block_imm
+
+GateID now reaches the AWG boundary for ROT.V (ROT-004, fixed 2026-08-27).
+The raw ROT.V stream already preserves the full 32-bit angle on `elem2` (this
+path did not have ROT.G's truncation bug), but the current dispatcher still
+does not queue or export that payload -- see ROT-003, implementation-order
+steps 4-6. Parameterized ROT.V is therefore not yet fully implemented at the
+AWG boundary: the gate identity is, the angle is not.
 
 **LMUL constraints** (hardware-enforced):
 
@@ -288,11 +312,12 @@ It emits exactly the active `VL` qubit indices and creates an execution barrier:
 
 Software reads the latest result from read-only custom CSR `0xCC0` using a
 standard CSR instruction such as `csrr`. A later measurement overwrites the
-previous word. The result-bit mapping is defined by the software/backend
-convention; the processor does not reinterpret the word.
+previous word. Bit `k` corresponds to element `k` of the measurement vector; the processor
+does not map it directly to physical qubit `k`.
 
 The current interface supports one outstanding measurement and one 32-bit
-result word. Multiple outstanding requests, a general result queue, and
+result word, so one transaction covers at most 32 measured elements. Multiple
+outstanding requests, a general result queue, and
 speculative execution across the measurement boundary are not defined.
 
 Signal-level timing, the two-cycle issued indication, Ibex interrupt handling,
@@ -308,11 +333,14 @@ A four-pair Bell program uses control indices `[0, 2, 4, 6]`, target indices
 vectors, the quantum sequence is:
 
 ```asm
-qv.h    v3, v1, x7, 0    # H on all control qubits
-qv.cx   v3, v1, v2, 0    # element-wise control/target pairs
-qv.meas v3, v1, x7, 0    # measure controls and enter halt/resume flow
-qv.h    v6, v2, x6, 0    # post-measure marker used by the demo
+qv.h    v1, x7, 12       # H on all control qubits
+qv.cx   v1, v2, 12       # vs1=v1 (control), vs2=v2 (target)
+qv.meas v1, x7, 12       # measure controls and enter halt/resume flow
+qv.h    v2, x6, 12       # post-measure marker used by the demo
 ```
+
+These instructions have no destination vector-register operand. They write to
+the quantum stream, not to `vd`.
 
 The complete annotated program, memory packing, vector setup, simulation
 commands, and expected logical sequence are maintained in
@@ -327,7 +355,7 @@ instruction encodings in this specification remain authoritative.
 
 - `QV.SINGLE`: allocate a normal integer GPR for `rs2[24:20]`; the 32-bit value in that
   register appears on `elem2` at the quantum backend.
-- `QV.PAIR`: keep `vs2` (source) and `vs1` (target) element-aligned.
+- `QV.PAIR`: keep `vs1` (control) and `vs2` (target) element-aligned.
 - `QV.ROT.G`: use a stable integer GPR for the angle; verify against scalar traffic hazards.
 - `QV.ROT.V`: load operands with **two different element widths** (`vle8` for `vs1`,
   `vle32` for `vs2`); only `mf2`, `m1`, `m2` are legal on `vs1`.
@@ -341,9 +369,9 @@ instruction encodings in this specification remain authoritative.
   live vector register groups during register allocation.
 - `m4` and `m8` on `vs1` for `QV.ROT.V` are hardware-illegal and must be rejected at
   compile time or assembly time.
-- `Block_imm` is a scheduling/metadata field at the moment, using to indicate the Q_IMM instruction, not a general immediate. The code
-  generator should have a clear policy for how this field is assigned (e.g., circuit layer
-  counter, zero for single-layer programs).
+- `Block_imm` is a scheduling offset, not a general arithmetic immediate. The
+  code generator should define how it is assigned; zero selects the dispatcher
+  `FIXED_LATENCY` fallback.
 
 ---
 
@@ -355,7 +383,9 @@ ISA-facing backlog items are listed here; cross-cutting verification gaps and ac
 <!-- - [ ] Implement `SWAP` gate in `QV.PAIR`. -->
 - [ ] Implement Mask Mode for `QV.SINGLE` (needs a new encoding point; the old `m` bit at `[11]`
       was reclaimed by the 5-bit `Block_imm` in the custom-0 migration).
-- [ ] Integrate hierarchical addressing: `Qidx = Block_imm × 128 + Vector Element[6:0]`
+- [ ] Decide whether hierarchical addressing needs a separate future encoding
+- [ ] Carry a 32-bit ROT payload with each timed event to the AWG boundary.
+- [ ] Remove the undocumented custom-0 ROT mask interpretation.
 - [ ] Enumerate all `QV.ROT.V` register-group conflict cases.
 - [ ] Investigate `QV.ROT.V` startup invalid-window behavior and define valid/ready contract.
 - [ ] Support for multiple outstanding measurement commands.

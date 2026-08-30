@@ -32,12 +32,22 @@ BUILD=1
 RUN=1
 CASE_NAME="bell_generic"
 MEM_FILE=""
+MEASURE_RESULT=""
+MEASURE_FILE=""
+MEASURE_DELAY=""
+AWG_OUTPUT=""
+MAX_CYCLES_ARG=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --build-only) RUN=0 ;;
         --no-build)   BUILD=0 ;;
-        --mem)        MEM_FILE="$2"; shift ;;
+        --mem)            MEM_FILE="$2"; shift ;;
+        --measure-result) MEASURE_RESULT="$2"; shift ;;
+        --measure-file)   MEASURE_FILE="$2"; shift ;;
+        --measure-delay)  MEASURE_DELAY="$2"; shift ;;
+        --output)         AWG_OUTPUT="$2"; shift ;;
+        --max-cycles)     MAX_CYCLES_ARG="$2"; shift ;;
         --*)          echo "Unknown option: $1" >&2; exit 1 ;;
         *)            CASE_NAME="$1" ;;
     esac
@@ -145,6 +155,18 @@ fi
 # Run
 # ---------------------------------------------------------------------------
 if [[ $RUN -eq 1 ]]; then
+    if [[ -n "$MEASURE_RESULT" && -n "$MEASURE_FILE" ]]; then
+        echo "ERROR: use either --measure-result or --measure-file, not both" >&2
+        exit 1
+    fi
+    [[ -z "$MEASURE_DELAY" || "$MEASURE_DELAY" =~ ^[0-9]+$ ]] || {
+        echo "ERROR: --measure-delay must be a non-negative integer" >&2
+        exit 1
+    }
+    [[ -z "$MAX_CYCLES_ARG" || "$MAX_CYCLES_ARG" =~ ^[1-9][0-9]*$ ]] || {
+        echo "ERROR: --max-cycles must be a positive integer" >&2
+        exit 1
+    }
     if [[ -z "${MEM_FILE}" ]]; then
         # Accept a bare case name, a name with .mem, or a path (with/without .mem).
         cand="${CASE_NAME%.mem}"                       # drop trailing .mem if given
@@ -154,6 +176,35 @@ if [[ $RUN -eq 1 ]]; then
     fi
     [[ -f "${MEM_FILE}" ]] || { echo "ERROR: mem file not found: ${MEM_FILE}"; exit 1; }
     [[ -x "${BIN}" ]]      || { echo "ERROR: binary not built: ${BIN} (run without --no-build)"; exit 1; }
-    echo "=== [sim] ${BIN} +MEM_FILE=${MEM_FILE} ==="
-    "${BIN}" "+MEM_FILE=${MEM_FILE}"
+    SIM_ARGS=("+MEM_FILE=${MEM_FILE}")
+    if [[ "${MEM_FILE##*/}" == "qv_rot_gateid.mem" ]]; then
+        SIM_ARGS+=("+EXPECT_ROT_GATEID")
+    fi
+    if [[ -n "$MEASURE_RESULT" ]]; then
+        MEASURE_RESULT="${MEASURE_RESULT#0x}"
+        MEASURE_RESULT="${MEASURE_RESULT#0X}"
+        [[ "$MEASURE_RESULT" =~ ^[0-9a-fA-F]{1,8}$ ]] || {
+            echo "ERROR: --measure-result must fit in 32 bits" >&2
+            exit 1
+        }
+        SIM_ARGS+=("+MEASURE_RESULT=${MEASURE_RESULT}")
+    fi
+    if [[ -n "$MEASURE_FILE" ]]; then
+        [[ -f "$MEASURE_FILE" ]] || {
+            echo "ERROR: measurement file not found: ${MEASURE_FILE}" >&2
+            exit 1
+        }
+        MEASURE_FILE="$(cd "$(dirname "$MEASURE_FILE")" && pwd)/$(basename "$MEASURE_FILE")"
+        SIM_ARGS+=("+MEASURE_FILE=${MEASURE_FILE}")
+    fi
+    [[ -z "$MEASURE_DELAY" ]] || SIM_ARGS+=("+MEASURE_DELAY=${MEASURE_DELAY}")
+    [[ -z "$MAX_CYCLES_ARG" ]] || SIM_ARGS+=("+MAX_CYCLES=${MAX_CYCLES_ARG}")
+    if [[ -n "$AWG_OUTPUT" ]]; then
+        mkdir -p "$(dirname "$AWG_OUTPUT")"
+        AWG_OUTPUT="$(cd "$(dirname "$AWG_OUTPUT")" && pwd)/$(basename "$AWG_OUTPUT")"
+        SIM_ARGS+=("+AWG_OUTPUT=${AWG_OUTPUT}")
+    fi
+
+    echo "=== [sim] ${BIN} ${SIM_ARGS[*]} ==="
+    "${BIN}" "${SIM_ARGS[@]}"
 fi

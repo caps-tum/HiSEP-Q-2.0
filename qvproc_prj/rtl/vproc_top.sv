@@ -275,12 +275,7 @@ module vproc_top import vproc_pkg::*; #(
     assign vcore_xif.issue_req.rs_valid = 2'b11;
 
     assign cpi_instr_gnt     = vcore_xif.issue_ready & ~vproc_issue_block;
-    // assign cpi_instr_illegal = ~vcore_xif.issue_resp.accept;
-    // The original logic reported an illegal instruction whenever `accept` was low, even if the
-    // coprocessor request had not been granted yet. After adding a configuration-valid stall in
-    // `vproc_core`, dependent vector instructions can legitimately wait with `issue_ready=0` while
-    // `accept=0`. Keep the original assignment commented for reference and only surface an illegal
-    // instruction once the request has actually been granted to the coprocessor. // quantum qvproc
+    // A non-accepted request is illegal only after the XIF issue handshake.
     assign cpi_instr_illegal = cpi_instr_valid & cpi_instr_gnt & ~vcore_xif.issue_resp.accept; // quantum qvproc
     assign cpi_xreg_wait     = vcore_xif.issue_resp.writeback;
 
@@ -893,65 +888,24 @@ module vproc_top import vproc_pkg::*; #(
         ~quantum_prev_valid_q | ~quantum_prev_first_cycle_q | (quantum_instr_id_o != quantum_prev_instr_id_q) // quantum qvproc
     ); // quantum qvproc
 
-    /*
-     * Keep the raw quantum trace visible on the existing ports, but synthesize
-     * a companion ready flag that masks known warm-up micro-steps before the
-     * trace is safe to sample.
-     *
-     * Most quantum instructions keep the original QSG-style protocol: only the
-     * program-level m4/m8 streams suppress ready during the first two first-cycle
-     * warm-up micro-steps.
-     *
-     * QRV is the only exception. Its mixed-width angle operand needs four startup
-     * QRV events before elem2 is fully aligned, so top-level ready stays low for
-     * those first four per-stream events across mf2/m1/m2. This keeps the ready
-     * contract self-contained in qvproc rather than pushing the warm-up skip into
-     * individual testbenches.
-     *
-     * The internal state is synchronous, but the exported ready flag is driven
-     * combinationally from the current trace inputs plus the registered state,
-     * so consumers can see ready=1 in the same cycle as the first accepted
-     * quantum data after the corresponding warm-up period completes.
-     */ // quantum qvproc
+    // Two-beat warm-up holdoff for large-LMUL streams. ROT.V no longer needs
+    // its own holdoff: the pipeline only delivers ROT.V beats once index and
+    // angle are properly paired (qrotv_angle_freeze in vproc_vregunpack.sv),
+    // so the old per-LMUL 4/6-cycle guess is gone.
     always_comb begin // quantum qvproc
         logic [31:0] first_cycle_seen_next; // quantum qvproc
         logic        quantum_holdoff_stream; // quantum qvproc
-        logic [31:0] quantum_qrotv_ready_holdoff_cycles; // quantum qvproc
         quantum_holdoff_count_d    = quantum_holdoff_count_q; // quantum qvproc
         quantum_prev_valid_d       = quantum_valid_o; // quantum qvproc
         quantum_prev_first_cycle_d = quantum_first_cycle_o; // quantum qvproc
         quantum_prev_instr_id_d    = quantum_instr_id_o; // quantum qvproc
         quantum_data_ready_d       = 1'b0; // quantum qvproc
         first_cycle_seen_next      = quantum_holdoff_count_q; // quantum qvproc
-        quantum_holdoff_stream     = 1'b0; // quantum qvproc
-        quantum_qrotv_ready_holdoff_cycles = 32'd0; // quantum qvproc
-
-        // All quantum instructions except QRV keep the original QSG-style protocol: only
-        // program-level m4/m8 streams suppress ready during the first two warm-up micro-steps.
-        // QRV is the only exception and uses LMUL-specific startup holdoff based on when elem2
-        // becomes valid in simulation: mf2 needs 4 hidden beats, m1 needs 6, and m2 needs none. // quantum qvproc
-        if (quantum_op_o == ELEM_QROTV) begin // quantum qvproc
-            quantum_holdoff_stream = 1'b1; // quantum qvproc
-            unique case (quantum_lmul) // quantum qvproc
-                LMUL_F2: quantum_qrotv_ready_holdoff_cycles = 32'd4; // mf2 // quantum qvproc
-                LMUL_1:  quantum_qrotv_ready_holdoff_cycles = 32'd6; // m1  // quantum qvproc
-                default: quantum_qrotv_ready_holdoff_cycles = 32'd0; // m2 and above // quantum qvproc
-            endcase // quantum qvproc
-        end else begin // quantum qvproc
-            quantum_holdoff_stream = (quantum_lmul == LMUL_4) || (quantum_lmul == LMUL_8); // quantum qvproc
-        end // quantum qvproc
+        quantum_holdoff_stream     = (quantum_lmul == LMUL_4) || (quantum_lmul == LMUL_8); // quantum qvproc
 
         if (~quantum_valid_o) begin // quantum qvproc
             quantum_holdoff_count_d = '0; // quantum qvproc
             quantum_data_ready_d    = 1'b0; // quantum qvproc
-        // end else if ((quantum_emul_o == EMUL_4) || (quantum_emul_o == EMUL_8)) begin // quantum qvproc
-        // The EMUL-based holdoff does not match QSG's program-level m4/m8 classes on this path.
-        // Keep it commented for reference and gate holdoff from the per-stream LMUL sideband
-        // captured when the instruction entered the vector pipeline. // quantum qvproc
-        end else if (quantum_op_o == ELEM_QROTV) begin // quantum qvproc
-            first_cycle_seen_next   = quantum_new_stream ? 32'd1 : (quantum_holdoff_count_q + 32'd1); // quantum qvproc
-            quantum_holdoff_count_d = first_cycle_seen_next; // quantum qvproc
-            quantum_data_ready_d    = (first_cycle_seen_next > quantum_qrotv_ready_holdoff_cycles); // quantum qvproc
         end else if (quantum_holdoff_stream) begin // quantum qvproc
             if (quantum_first_cycle_o) begin // quantum qvproc
                 first_cycle_seen_next   = quantum_new_stream ? 32'd1 : (quantum_holdoff_count_q + 32'd1); // quantum qvproc

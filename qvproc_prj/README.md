@@ -35,13 +35,26 @@ cd qvproc_prj
 vivado -mode batch -source rebuild_project.tcl
 ```
 
-The script creates `build/qvproc/qvproc.xpr` for part `xcu55c-fsvh2892-2L-e` and board part `xilinx.com:au55c:part0:1.0`.
+The script currently creates `build/qvproc/qvproc.xpr` for part
+`xcu55c-fsvh2892-2L-e` and board part `xilinx.com:au55c:part0:1.0`. These are
+legacy script settings, not the intended deployment target.
 
-## Important build limitation
+## Build status
 
-The current rebuild script selects `vproc_top` and does not include `vproc_qdisp_top.sv`, `quantum_dispatcher.v`, `timed_fifo.v`, `time_controller.v`, or `inst_fifo.v` in the synthesis fileset. It therefore rebuilds the Ibex/vproc top, not the complete AWG-facing HiSEP-Q wrapper.
+As of 2026-08-26, the rebuild script selects `vproc_qdisp_top` as the synthesis
+top and includes `vproc_qdisp_top.sv`, `quantum_dispatcher.v`, `timed_fifo.v`,
+`time_controller.v`, and `inst_fifo.v` in the `sources_1` fileset, along with
+`constr/timing.xdc` in `constrs_1`. Verified against a real Vivado 2024.2
+install: the script recreates the project cleanly, RTL elaboration reports
+top = `vproc_qdisp_top` with 0 errors, and a full `synth_design` run completes
+with 0 errors (32 pre-existing critical warnings in `vproc_pipeline.sv`,
+unrelated to the dispatcher).
 
-Do not present the current rebuild result as synthesis of the complete dispatcher architecture until the full wrapper is included and passes synthesis.
+The intended future board is ZCU216. Retargeting the Tcl part/board settings,
+selecting the board-facing interfaces, and adding pin/timing constraints are
+not implemented. `vproc_qdisp_top` ports `mem_*`, `measure_*`, and `qubit_*`
+currently have no board-level LOC constraints. The present project rebuild is
+a synthesis check, not a board-programmable ZCU216 flow.
 
 ## Unified co-simulation
 

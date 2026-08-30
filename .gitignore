@@ -33,6 +33,7 @@ qvproc_prj/tb/quantum_cases/qrv_mf2_direct/*.vcd
 demo/verilator/obj_dir/
 
 existing_problem.md
+resolved_problems.md
 
 # ── Superseded documentation kept locally for reference ─────────────────────
 docs/archive/

@@ -1,3 +1,10 @@
+LEGACY OP-V FIXTURE NOTES
+
+These notes describe the matching split `.mem` image used by legacy trace benches.
+Words, `vd`/`vm` fields, and mnemonic spellings here are not canonical custom-0
+assembly. Use `docs/HiSEPQ_ISA_spec.md` for the current ISA and `demo/*.mem` for
+the maintained unified stimuli.
+
 Bell-state preparation demo with measure halt-resume
 
 Program intent

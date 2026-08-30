@@ -117,16 +117,17 @@ after the halt-resume handshake.
 # Encoding: QV.SINGLE with GateID=0x64.
 # elem1 stream → [0, 2, 4, 6]  (qubit indices, one per cycle)
 # elem2         → 0x00000055   (32-bit scalar payload from x7)
-# Format: qv.h  vd, vs1, rs2, Block_imm
-qv.h    v3, v1, x7, 0
+# Format: qv.h  vs1, rs2, Block_imm
+qv.h    v1, x7, 12
 
 # Apply CNOT gate: v1 is the control group, v2 is the target group.
 # Pairs are matched element-wise: (v1[0],v2[0])=(0,1), (v1[1],v2[1])=(2,3), ...
 # Encoding: QV.PAIR with GateID=0x66.
-# elem1 stream → [0, 2, 4, 6]  (target qubit indices)
-# elem2 stream → [1, 3, 5, 7]  (control qubit indices)
-# Format: qv.cx vd, vs1(ctrl), vs2(tgt), Block_imm
-qv.cx   v3, v1, v2, 0
+# elem1 stream → [0, 2, 4, 6]  (control qubit indices, from v1/vs1)
+# elem2 stream → [1, 3, 5, 7]  (target qubit indices, from v2/vs2)
+# elem1/vs1 fires as CTRL; elem2/vs2 fires as TGT.
+# Format: qv.cx vs1(ctrl), vs2(tgt), Block_imm
+qv.cx   v1, v2, 12
 
 # Measure all 4 control qubits in v1.
 # Encoding: QV.SINGLE with GateID=0x68 (reserved MEASURE gate).
@@ -138,19 +139,22 @@ qv.cx   v3, v1, v2, 0
 #   5. Execution resumes only after external measure_done is asserted.
 # elem1 stream → [0, 2, 4, 6]  (qubit indices sent to the measurement backend)
 # elem2         → 0x00000055   (scalar tag from x7, forwarded to backend)
-# Format: qv.meas vd, vs1, rs2, Block_imm
-qv.meas v3, v1, x7, 0
+# Format: qv.meas vs1, rs2, Block_imm
+qv.meas v1, x7, 12
 
 # Post-measure resume marker (not part of the Bell-state algorithm).
 # This QV.SINGLE with GateID=0x78 is issued immediately after measure_done
 # releases the stall, proving that qvproc correctly resumes execution.
 # elem1 stream → [1, 3, 5, 7]  (target qubit indices from v2)
 # elem2         → 0x00000066   (resume tag from x6)
-qv.h    v6, v2, x6, 0
+qv.h    v2, x6, 12
 
 # Self-loop: program halts here after the resume marker retires.
 jal     x0, 0
 ```
+
+The quantum instructions have three assembly operands and no `vd`. For PAIR,
+`vs1` is control and `vs2` is target.
 
 After backend completion, software can read the latest result from custom CSR `0xCC0`; the authoritative result contract is in [`HiSEPQ_ISA_spec.md`](HiSEPQ_ISA_spec.md).
 
@@ -198,4 +202,6 @@ The dispatcher uses a burst/commit design, so exact historical `t_cnt` values ar
 
 ## Reference source files
 
-The source/annotated Bell material remains under `qvproc_prj/tb/quantum_cases/bell_state_reference/`. Some files document legacy OP-V encodings; new programs should use the custom-0 encoding defined by the ISA specification.
+The files under `qvproc_prj/tb/quantum_cases/bell_state_reference/` are legacy
+OP-V fixtures for the compatibility decoder. They are not source for the
+custom-0 `demo/*.mem` images.

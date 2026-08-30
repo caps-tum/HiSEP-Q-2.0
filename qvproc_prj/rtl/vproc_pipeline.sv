@@ -897,10 +897,11 @@ module vproc_pipeline import vproc_pkg::*; #(
     always_comb begin
         unpack_op_eew_override = '0; // quantum qvproc
         unpack_op_eew          = '{default: VSEW_8}; // quantum qvproc
-        // QSG now sources elem2 from a scalar rs2 payload. Keep that operand as a full 32-bit
-        // word through unpack so it is not replicated across byte-sized lanes when the
-        // instruction itself runs with e8 indices. // quantum qvproc
-        if (UNITS[UNIT_ELEM] && (state_q.unit == UNIT_ELEM) && (state_q.mode.elem.op == ELEM_QSINGLE)) begin // quantum qvproc
+        // SINGLE and ROT.G carry a full 32-bit scalar rs2 under e8 indices;
+        // without the e32 override, vregunpack's e8 xreg path replicates
+        // xval[7:0] across the whole operand.
+        if (UNITS[UNIT_ELEM] && (state_q.unit == UNIT_ELEM) &&
+            ((state_q.mode.elem.op == ELEM_QSINGLE) || (state_q.mode.elem.op == ELEM_QROTG))) begin // quantum qvproc
             unpack_op_eew_override[1] = 1'b1; // quantum qvproc
             unpack_op_eew[1]          = VSEW_32; // quantum qvproc
         end
@@ -1008,11 +1009,30 @@ module vproc_pipeline import vproc_pkg::*; #(
     logic                                   unit_out_pend_clear;
     logic      [1:0]                        unit_out_pend_clear_cnt;
     logic                                   unit_out_instr_done;
+    // Keep this masking: QROTV startup beats carry first_cycle=1, so letting
+    // them through enqueues phantom unit_queue entries and deadlocks the pipe.
+    // (The old angle misalignment was a vregunpack buffer bug, not this mask
+    // -- see qrotv_angle_freeze there.)
     logic unit_in_valid; // quantum qvproc
     assign unit_in_valid = unpack_out_valid &
                            ~(unpack_out_ctrl.qrotv_startup &
                              (unpack_out_ctrl.unit == UNIT_ELEM) &
                              (unpack_out_ctrl.mode.elem.op == ELEM_QROTV)); // quantum qvproc
+
+`ifdef ROT005_TRACE // quantum qvproc
+    always_ff @(posedge clk_i) begin // quantum qvproc
+        if (unpack_out_ctrl.unit == UNIT_ELEM && unpack_out_ctrl.mode.elem.op == ELEM_QROTV) begin // quantum qvproc
+            $display("[ROT005] t=%0t valid=%0d startup=%0d op2_ready=%0d in_valid=%0d out_ready=%0d op0=%08x op1=%08x", // quantum qvproc
+                     $time, unpack_out_valid, unpack_out_ctrl.qrotv_startup, qrotv_op2_ready, // quantum qvproc
+                     unit_in_valid, unpack_out_ready, unpack_out_ops[0], unpack_out_ops[1]); // quantum qvproc
+        end // quantum qvproc
+        if (state_valid_q && (state_q.unit == UNIT_ELEM) && (state_q.mode.elem.op == ELEM_QROTV)) begin // quantum qvproc
+            $display("[ROT005S] t=%0t su=%0d ph=%0d ch=%0d cnt=%0d sr=%0d fc=%0d opl=%b", $time, // quantum qvproc
+                     state_q.qrotv_startup, state_q.qrotv_startup_phase, state_q.qrotv_op2_chunk, // quantum qvproc
+                     state_q.count.val, state_ready, state_q.first_cycle, state_q.op_load); // quantum qvproc
+        end // quantum qvproc
+    end // quantum qvproc
+`endif // quantum qvproc
 
     vproc_unit_mux #(
         .UNITS                     ( UNITS                    ),

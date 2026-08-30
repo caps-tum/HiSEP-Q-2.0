@@ -21,7 +21,13 @@ module timed_fifo #(
     output                  error,          // FIFO full on a write attempt
     // Combinational preflight result for i_fifo_time. High when this qubit
     // already has an accepted, not-yet-fired gate at the same timestamp.
-    output                  time_conflict
+    output                  time_conflict,
+    // Combinational preflight result: high when this qubit's FIFO has room
+    // for one more write right now. Callers doing an atomic multi-qubit
+    // commit should check this for every touched qubit *before* asserting
+    // i_fifo_we on any of them, since a write attempted while this is low is
+    // silently dropped by inst_fifo (see `error` above) rather than queued.
+    output                  write_ready
 );
 
     wire [TIME_WIDTH+OP_WIDTH-1:0] fifo_din  = {i_fifo_time, i_fifo_op};
@@ -85,6 +91,7 @@ module timed_fifo #(
     );
 
     assign error = fifo_full & i_fifo_we;   // write attempted on a full FIFO
+    assign write_ready = !fifo_full;
 
     always @(posedge clk) begin
         if (reset) begin

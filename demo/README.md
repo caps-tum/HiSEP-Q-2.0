@@ -33,9 +33,16 @@ cd demo/verilator
 ./run_verilator.sh bell_generic
 ./run_verilator.sh --no-build bell_generic
 ./run_verilator.sh ../mqtbench_qft_8.mem
+./run_verilator.sh qv_feedback --measure-result 1 --output output/feedback.csv
 ```
 
 The argument may be a demo case name, a `.mem` filename, or a path. The script builds the same unified testbench used by `demo/run.sh` as a normal Verilator executable.
+
+`--measure-result HEX` supplies one complete 32-bit result word. For programs
+with multiple measurement transactions, use `--measure-file FILE`; each line is
+`result_word delay_cycles`, for example `00000001 50`. `--output FILE` writes
+AWG events as CSV, with one row per firing qubit and a shared `event_id` for
+qubits fired together.
 
 ## Memory-image format
 
@@ -71,7 +78,20 @@ Use `ls *.mem` for the current case list. The set is evolving, so this README do
 - `[AWG]`: a dispatcher output event for one or more qubits;
 - measurement lines: halt, drain, backend completion, and resume observations.
 
-The existing unified testbench historically reports PASS when no FIFO overflow is seen. That is not sufficient functional verification: an out-of-range program can produce zero fires and still show the old PASS banner. Illegal m4/m8 stimuli, timeout behavior, and exact cycle values must be interpreted using the current contract in [`../docs/verification.md`](../docs/verification.md).
+As of 2026-08-26, the unified testbench's `RESULT` line reflects testbench
+failures (malformed/exhausted measurement input, timeout, event-log overflow)
+and all four dispatcher error classes (invalid-index, invalid-pair,
+FIFO-overflow, illegal) -- any of these now also makes the process exit
+non-zero via `$fatal` on Verilator (confirmed: `qv_pair.mem`, which has 248
+invalid-pair pulses, exits 134, not 0). This is a real improvement over the
+historical "PASS whenever no FIFO overflow is seen" banner, but it is still
+not a complete functional pass: there is no per-case expected-event
+scoreboard, so a program that produces the wrong gate/qubit/timing sequence
+without tripping any of the above checks can still show `RESULT : PASS`. On
+Vivado xsim specifically, `$fatal` prints the failure but the xsim process
+itself still exits 0 -- this gap is not yet closed on that runner. See
+[`../docs/verification.md`](../docs/verification.md) for the current
+contract and exact regression numbers.
 
 ## Bell tutorial
 

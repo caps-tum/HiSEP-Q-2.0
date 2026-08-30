@@ -1,3 +1,7 @@
+// LEGACY OP-V COMPATIBILITY FIXTURE.
+// This annotation matches the split legacy image, not canonical custom-0 assembly.
+// See docs/HiSEPQ_ISA_spec.md and demo/*.mem for the maintained flow.
+
 // =====================================================================
 // Bell-state reference machine code  (8 Bell pairs, qubits [0..15])
 // Verified PASS in vproc_qdisp_bell_tb cosim:

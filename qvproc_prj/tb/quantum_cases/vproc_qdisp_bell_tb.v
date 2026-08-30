@@ -1,25 +1,10 @@
 `timescale 1ns / 1ps
 //
-// vproc_qdisp_bell_tb.v  –  NEW FILE, co-simulation testbench
-//
-// Instantiates vproc_qdisp_top (which wraps vproc_top + quantum_dispatcher)
-// and runs the Bell-state program (instruction_bell.mem + data_bell.mem).
-//
-// What this TB does:
-//   1. Drives the same memory model and measure-handshake as vproc_bell_tb.v
-//   2. Logs the raw qvproc quantum stream (same format as original Bell TB)
-//   3. Logs per-qubit gate firing events from quantum_dispatcher
-//   4. Checks: no FIFO overflow, qubit count matches quantum event count,
-//      all errors are zero when the simulation ends
-//
-// Bell program shape:
-//   QV.SINGLE  (Hadamard) – 8 beats, qubits 0-7
-//   QV.PAIR    (CNOT/CX)  – 8 beats, qubit pairs (tgt v1, src v2)
-//   QSG.MEASURE           – halt until measure_done_i
-//   QV.SINGLE  (resume marker) – 8 beats
-//
-// Termination: same policy as vproc_bell_tb.v — end when the post-measure
-// resume-marker stream completes, or on timeout.
+// Unified Ibex + vproc + timed-dispatch co-simulation testbench.
+// The selected image is supplied through +MEM_FILE. The bench logs raw stream
+// beats and fire-time AWG events, drives measurement responses, and fails on
+// timeout, input/logging errors, or any classified dispatcher error. Directed
+// images may enable an exact scoreboard through a plusarg.
 
 module vproc_qdisp_bell_tb;
 
@@ -40,7 +25,7 @@ module vproc_qdisp_bell_tb;
     parameter BOOT_WORD_ADDR           = 32;
 
     // quantum_dispatcher parameters (must match vproc_qdisp_top defaults)
-    parameter NUM_QUBITS    = 16;   // Bell program uses qubits 0-15
+    parameter NUM_QUBITS    = 16;   // Maintained unified snapshot capacity.
     parameter GATE_WIDTH    = 7;
     parameter TIME_WIDTH    = 20;
     parameter FIXED_LATENCY = 16;
@@ -63,9 +48,16 @@ module vproc_qdisp_bell_tb;
     integer invalid_pair_count;
     integer fifo_overflow_count;
     integer illegal_count;
+    integer capacity_error_count;
+    integer awg_event_idx;
+    integer measurement_count;
+    integer tb_failure_count;
+    integer rot_gateid_fire_per_q [0:NUM_QUBITS-1];
+    integer rot_gateid_bad_fire_count;
+    reg     expect_rot_gateid;
 
     // -----------------------------------------------------------------
-    // Op-name helper (same as original Bell TB)
+    // Trace-name helper
     // -----------------------------------------------------------------
     function [8*12-1:0] bell_op_name;
         input [4:0] op;
@@ -93,10 +85,10 @@ module vproc_qdisp_bell_tb;
                 32'h02050087: bell_instr_name = "vle8.v v1, (a0)            ";
                 32'h00850593: bell_instr_name = "addi a1, a0, 8             ";
                 32'h02058107: bell_instr_name = "vle8.v v2, (a1)            ";
-                32'hC8708657: bell_instr_name = "QV.SINGLE(H) vd3, v1, x7   ";
-                32'hCC208657: bell_instr_name = "QV.PAIR(CNOT) vd3, v1, v2  ";
-                32'hD0708657: bell_instr_name = "QSG.MEASURE vd3, v1, x7    ";
-                32'hF0610657: bell_instr_name = "QV.SINGLE(resume) vd6, v2, x6";
+                32'hC8708657: bell_instr_name = "QV.SINGLE(H) [legacy OP-V]  ";
+                32'hCC208657: bell_instr_name = "QV.PAIR(CNOT) [legacy OP-V]";
+                32'hD0708657: bell_instr_name = "QV.MEASURE [legacy OP-V]   ";
+                32'hF0610657: bell_instr_name = "QV.SINGLE(resume) [legacy]";
                 // custom-0 (0x0B) encodings (RFC #3 migration)
                 32'hC870860B: bell_instr_name = "QV.SINGLE(H) [cust0]       ";
                 32'hCC20960B: bell_instr_name = "QV.PAIR(CNOT) [cust0]      ";
@@ -145,7 +137,7 @@ module vproc_qdisp_bell_tb;
     wire                  quantum_valid;
     wire [4:0]            quantum_op;
     wire [2:0]            quantum_instr_id;
-    wire [4:0]            quantum_vd_addr;
+    wire [4:0]            quantum_vd_addr; // legacy field name; custom-0 bits [11:7] are block_imm
     wire [31:0]           quantum_elem1;
     wire [31:0]           quantum_elem2;
     wire [31:0]           quantum_elem3;
@@ -166,9 +158,12 @@ module vproc_qdisp_bell_tb;
     wire [NUM_QUBITS-1:0]            qubit_valid;
     wire [NUM_QUBITS-1:0]            qubit_error;
     wire [NUM_QUBITS-1:0]            qubit_ctrl;   // 1=control side, 0=target side
+    wire [32*NUM_QUBITS-1:0]         qubit_payload;
+    wire [NUM_QUBITS-1:0]            qubit_payload_valid;
     wire                              invalid_index_error;
     wire                              invalid_pair_error;
     wire                              illegal_error;
+    wire                              capacity_error;
     wire [TIME_WIDTH-1:0]            t_cnt;
 
     // -----------------------------------------------------------------
@@ -232,9 +227,12 @@ module vproc_qdisp_bell_tb;
         .qubit_valid_o              ( qubit_valid              ),
         .qubit_error_o              ( qubit_error              ),
         .qubit_ctrl_o               ( qubit_ctrl               ),
+        .qubit_payload_o            ( qubit_payload            ),
+        .qubit_payload_valid_o      ( qubit_payload_valid      ),
         .invalid_index_error_o      ( invalid_index_error      ),
         .invalid_pair_error_o       ( invalid_pair_error       ),
         .illegal_error_o            ( illegal_error            ),
+        .capacity_error_o           ( capacity_error           ),
         .t_cnt_o                    ( t_cnt                    )
     );
 
@@ -300,8 +298,15 @@ module vproc_qdisp_bell_tb;
     reg [31:0] prev_ibex_id_instr;
     reg [2:0]  prev_quantum_instr_id;
     reg        prev_quantum_instr_id_valid;
-    reg [31:0] measure_result_val;   // what the "backend" reports on measure_done;
-                                      // override with +MEASURE_RESULT=0x...
+    reg [31:0] measure_result_val;
+    reg [1023:0] measure_input_file;
+    reg [1023:0] awg_output_file;
+    integer measure_input_fd;
+    integer measure_input_scan;
+    integer awg_output_fd;
+    integer measure_delay_cycles;
+    integer max_cycles_limit;
+    reg use_measure_file;
 
     always @(posedge clk) begin
         if (rst) begin
@@ -328,10 +333,23 @@ module vproc_qdisp_bell_tb;
                 $display("[QDISP_TB][cycle=%0d][MEASURE] measure_issued_done=1", cycle_count);
 
             if (measure_issued_done && !prev_measure_issued_done) begin
-                measure_wait_pending     <= 1'b1;
-                measure_wait_cycles_left <= MEASURE_DONE_DELAY_CYCLES;
-                $display("[QDISP_TB][cycle=%0d][WAIT] ADC delay = %0d cycles",
-                         cycle_count, MEASURE_DONE_DELAY_CYCLES);
+                if (use_measure_file) begin
+                    measure_input_scan = $fscanf(measure_input_fd, "%h %d\n",
+                                                measure_result_val, measure_delay_cycles);
+                    if ((measure_input_scan != 2) || (measure_delay_cycles < 0)) begin
+                        $display("[QDISP_TB][cycle=%0d][FAIL] measurement input exhausted or malformed at transaction %0d",
+                                 cycle_count, measurement_count);
+                        finish_simulation(1);
+                    end
+                end
+                if (!use_measure_file ||
+                    ((measure_input_scan == 2) && (measure_delay_cycles >= 0))) begin
+                    measure_wait_pending     <= 1'b1;
+                    measure_wait_cycles_left <= measure_delay_cycles;
+                    measurement_count         = measurement_count + 1;
+                    $display("[QDISP_TB][cycle=%0d][WAIT] ADC delay = %0d cycles, result=%08x",
+                             cycle_count, measure_delay_cycles, measure_result_val);
+                end
             end else if (measure_wait_pending) begin
                 if (measure_wait_cycles_left == 0) begin
                     measure_done         <= 1'b1;
@@ -357,12 +375,12 @@ module vproc_qdisp_bell_tb;
             if (quantum_event_idx >= EVENT_LOG_LIMIT) begin
                 $display("[QDISP_TB][cycle=%0d][FAIL] EVENT_LOG_LIMIT=%0d reached",
                          cycle_count, EVENT_LOG_LIMIT);
-                $finish;
+                finish_simulation(1);
             end
 
             if (!prev_quantum_instr_id_valid ||
                 (quantum_instr_id != prev_quantum_instr_id))
-                $display("[QDISP_TB][cycle=%0d][QX_START] op=%0d(%0s) id=%0d vd=%0d elem2=%08x elem3=%08x ready=%0b",
+                $display("[QDISP_TB][cycle=%0d][QX_START] op=%0d(%0s) id=%0d field_11_7=%0d elem2=%08x elem3=%08x ready=%0b",
                          cycle_count, quantum_op, bell_op_name(quantum_op),
                          quantum_instr_id, quantum_vd_addr,
                          quantum_elem2, quantum_elem3, quantum_data_ready);
@@ -406,13 +424,63 @@ module vproc_qdisp_bell_tb;
                 // Per-qubit detail
                 for (qi = 0; qi < NUM_QUBITS; qi = qi + 1) begin
                     if (qubit_valid[qi]) begin
-                        $display("[AWG][t_cnt=%0d]   qubit[%02d]  gate=0x%02x  role=%0s",
-                                 t_cnt, qi,
-                                 qubit_gate[(qi+1)*GATE_WIDTH-1 -: GATE_WIDTH],
-                                 qubit_ctrl[qi] ? "CTRL" : "TGT ");
+                        if (qubit_payload_valid[qi])
+                            $display("[AWG][t_cnt=%0d]   qubit[%02d]  gate=0x%02x  role=%0s  payload=0x%08x",
+                                     t_cnt, qi,
+                                     qubit_gate[(qi+1)*GATE_WIDTH-1 -: GATE_WIDTH],
+                                     qubit_ctrl[qi] ? "CTRL" : "TGT ",
+                                     qubit_payload[(qi+1)*32-1 -: 32]);
+                        else
+                            $display("[AWG][t_cnt=%0d]   qubit[%02d]  gate=0x%02x  role=%0s",
+                                     t_cnt, qi,
+                                     qubit_gate[(qi+1)*GATE_WIDTH-1 -: GATE_WIDTH],
+                                     qubit_ctrl[qi] ? "CTRL" : "TGT ");
+                        if (awg_output_fd != 0)
+                            $fwrite(awg_output_fd, "%0d,%0d,%0d,0x%0h,%0d,0x%02x,%0s,%0d,0x%08x\n",
+                                    awg_event_idx, cycle_count, t_cnt, qubit_valid, qi,
+                                    qubit_gate[(qi+1)*GATE_WIDTH-1 -: GATE_WIDTH],
+                                    qubit_ctrl[qi] ? "CTRL" : "TGT",
+                                    qubit_payload_valid[qi],
+                                    qubit_payload[(qi+1)*32-1 -: 32]);
                         qubit_fire_count = qubit_fire_count + 1;
+                        if (expect_rot_gateid) begin
+                            rot_gateid_fire_per_q[qi] =
+                                rot_gateid_fire_per_q[qi] + 1;
+                            case (qi)
+                                0, 1: begin
+                                    if ((qubit_gate[(qi+1)*GATE_WIDTH-1 -: GATE_WIDTH] != 7'h6e) ||
+                                        (qubit_ctrl[qi] != 1'b1) ||
+                                        (qubit_payload_valid[qi] != 1'b1) ||
+                                        (qubit_payload[(qi+1)*32-1 -: 32] != 32'h00000555))
+                                        rot_gateid_bad_fire_count =
+                                            rot_gateid_bad_fire_count + 1;
+                                end
+                                2: begin
+                                    if ((qubit_gate[(qi+1)*GATE_WIDTH-1 -: GATE_WIDTH] != 7'h6a) ||
+                                        (qubit_ctrl[qi] != 1'b1) ||
+                                        (qubit_payload_valid[qi] != 1'b1) ||
+                                        (qubit_payload[(qi+1)*32-1 -: 32] != 32'h00000aaa))
+                                        rot_gateid_bad_fire_count =
+                                            rot_gateid_bad_fire_count + 1;
+                                end
+                                3: begin
+                                    if ((qubit_gate[(qi+1)*GATE_WIDTH-1 -: GATE_WIDTH] != 7'h6a) ||
+                                        (qubit_ctrl[qi] != 1'b1) ||
+                                        (qubit_payload_valid[qi] != 1'b1) ||
+                                        (qubit_payload[(qi+1)*32-1 -: 32] != 32'h00000bbb))
+                                        rot_gateid_bad_fire_count =
+                                            rot_gateid_bad_fire_count + 1;
+                                end
+                                default:
+                                    rot_gateid_bad_fire_count =
+                                        rot_gateid_bad_fire_count + 1;
+                            endcase
+                        end
                     end
                 end
+                if (awg_output_fd != 0)
+                    $fflush(awg_output_fd);
+                awg_event_idx = awg_event_idx + 1;
             end
 
             if (|qubit_error) begin
@@ -438,6 +506,12 @@ module vproc_qdisp_bell_tb;
                          cycle_count);
                 illegal_count = illegal_count + 1;
             end
+
+            if (capacity_error) begin
+                $display("[QDISP_TB][cycle=%0d][ERROR][CAPACITY] burst rejected -- at least one touched qubit's FIFO had no room",
+                         cycle_count);
+                capacity_error_count = capacity_error_count + 1;
+            end
         end
     end
 
@@ -451,18 +525,75 @@ module vproc_qdisp_bell_tb;
             $display("[QDISP_TB]  cycles         : %0d", cycle_count);
             $display("[QDISP_TB]  quantum events : %0d", quantum_event_idx);
             $display("[QDISP_TB]  qubit fires    : %0d", qubit_fire_count);
+            $display("[QDISP_TB]  AWG events     : %0d", awg_event_idx);
+            $display("[QDISP_TB]  measurements   : %0d", measurement_count);
+            $display("[QDISP_TB]  TB failures    : %0d", tb_failure_count);
             $display("[QDISP_TB]  invalid-index : %0d", invalid_index_count);
             $display("[QDISP_TB]  invalid-pair  : %0d", invalid_pair_count);
             $display("[QDISP_TB]  FIFO-overflow : %0d", fifo_overflow_count);
             $display("[QDISP_TB]  illegal       : %0d", illegal_count);
-            if ((invalid_index_count + invalid_pair_count +
-                 fifo_overflow_count + illegal_count) == 0)
-                $display("[QDISP_TB]  RESULT         : PASS - no dispatcher errors");
+            $display("[QDISP_TB]  capacity      : %0d", capacity_error_count);
+            if ((tb_failure_count + invalid_index_count + invalid_pair_count +
+                 fifo_overflow_count + illegal_count + capacity_error_count) == 0)
+                $display("[QDISP_TB]  RESULT         : PASS");
             else
-                $display("[QDISP_TB]  RESULT         : FAIL - %0d dispatcher error pulse(s)",
+                $display("[QDISP_TB]  RESULT         : FAIL - %0d testbench failure(s), %0d dispatcher error pulse(s)",
+                         tb_failure_count,
                          invalid_index_count + invalid_pair_count +
-                         fifo_overflow_count + illegal_count);
+                         fifo_overflow_count + illegal_count + capacity_error_count);
             $display("[QDISP_TB] ==========================");
+            if (awg_output_fd != 0) begin
+                $fflush(awg_output_fd);
+                $fclose(awg_output_fd);
+                awg_output_fd = 0;
+            end
+            if (measure_input_fd != 0) begin
+                $fclose(measure_input_fd);
+                measure_input_fd = 0;
+            end
+        end
+    endtask
+
+    task check_case_expectations;
+        begin
+            if (expect_rot_gateid) begin
+                if ((quantum_event_idx != 4) ||
+                    (awg_event_idx != 2) ||
+                    (qubit_fire_count != 4) ||
+                    (rot_gateid_fire_per_q[0] != 1) ||
+                    (rot_gateid_fire_per_q[1] != 1) ||
+                    (rot_gateid_fire_per_q[2] != 1) ||
+                    (rot_gateid_fire_per_q[3] != 1) ||
+                    (rot_gateid_bad_fire_count != 0)) begin
+                    tb_failure_count = tb_failure_count + 1;
+                    $display("[FAIL][ROT_GATEID] raw=%0d awg_events=%0d fires=%0d per_q=%0d,%0d,%0d,%0d bad=%0d",
+                             quantum_event_idx, awg_event_idx,
+                             qubit_fire_count,
+                             rot_gateid_fire_per_q[0],
+                             rot_gateid_fire_per_q[1],
+                             rot_gateid_fire_per_q[2],
+                             rot_gateid_fire_per_q[3],
+                             rot_gateid_bad_fire_count);
+                end else begin
+                    $display("[PASS][ROT_GATEID] GateID and payload match on q0-q3");
+                end
+            end
+        end
+    endtask
+
+    task finish_simulation;
+        input testbench_failure;
+        begin
+            if (testbench_failure)
+                tb_failure_count = tb_failure_count + 1;
+            check_case_expectations;
+            print_summary;
+            if ((tb_failure_count != 0) ||
+                ((invalid_index_count + invalid_pair_count +
+                  fifo_overflow_count + illegal_count + capacity_error_count) != 0))
+                $fatal(1, "[QDISP_TB] simulation failed");
+            else
+                $finish;
         end
     endtask
 
@@ -480,6 +611,10 @@ module vproc_qdisp_bell_tb;
         invalid_pair_count          = 0;
         fifo_overflow_count         = 0;
         illegal_count               = 0;
+        capacity_error_count        = 0;
+        awg_event_idx               = 0;
+        measurement_count           = 0;
+        tb_failure_count            = 0;
         resume_event_count          = 0;
         resume_stream_seen          = 1'b0;
         mem_rvalid                  = 1'b0;
@@ -487,12 +622,20 @@ module vproc_qdisp_bell_tb;
         mem_rdata                   = 32'h0;
         prev_quantum_instr_id       = 3'b000;
         prev_quantum_instr_id_valid = 1'b0;
+        rot_gateid_bad_fire_count   = 0;
+        expect_rot_gateid           = 1'b0;
         measure_done                = 1'b0;
         measure_result               = 32'h0;
         prev_qvsg_meas              = 1'b0;
         prev_measure_issued_done    = 1'b0;
         measure_wait_pending        = 1'b0;
         measure_wait_cycles_left    = 0;
+        measure_delay_cycles        = MEASURE_DONE_DELAY_CYCLES;
+        measure_input_fd            = 0;
+        measure_input_scan          = 0;
+        awg_output_fd               = 0;
+        use_measure_file            = 0;
+        max_cycles_limit            = MAX_CYCLES;
         prev_ibex_id_instr          = 32'h0;
 
         for (i = 0; i < MEM_WORDS; i = i + 1)
@@ -502,6 +645,8 @@ module vproc_qdisp_bell_tb;
             mem_rdata_queue[i]  = 32'h0;
             mem_err_queue[i]    = 1'b0;
         end
+        for (i = 0; i < NUM_QUBITS; i = i + 1)
+            rot_gateid_fire_per_q[i] = 0;
 
         // Load memory.
         // Primary:  +MEM_FILE=combined.mem  (single file, @addr markers for data section)
@@ -532,6 +677,31 @@ module vproc_qdisp_bell_tb;
         if (!$value$plusargs("MEASURE_RESULT=%h", measure_result_val))
             measure_result_val = 32'hA5A5A5A5;
 
+        if (!$value$plusargs("MEASURE_DELAY=%d", measure_delay_cycles))
+            measure_delay_cycles = MEASURE_DONE_DELAY_CYCLES;
+        if ($value$plusargs("MEASURE_FILE=%s", measure_input_file)) begin
+            measure_input_fd = $fopen(measure_input_file, "r");
+            if (measure_input_fd == 0) begin
+                $display("[QDISP_TB][INIT][FAIL] cannot open measurement file: %0s", measure_input_file);
+                finish_simulation(1);
+            end else begin
+                use_measure_file = 1;
+                $display("[QDISP_TB][INIT] measurement file: %0s", measure_input_file);
+            end
+        end
+        if ($value$plusargs("AWG_OUTPUT=%s", awg_output_file)) begin
+            awg_output_fd = $fopen(awg_output_file, "w");
+            if (awg_output_fd == 0) begin
+                $display("[QDISP_TB][INIT][FAIL] cannot open AWG output: %0s", awg_output_file);
+                finish_simulation(1);
+            end else begin
+                $fwrite(awg_output_fd, "event_id,cycle,t_cnt,valid_mask,qubit,gate_id,role,payload_valid,payload\n");
+                $display("[QDISP_TB][INIT] AWG output: %0s", awg_output_file);
+            end
+        end
+        if (!$value$plusargs("MAX_CYCLES=%d", max_cycles_limit))
+            max_cycles_limit = MAX_CYCLES;
+
         $display("[QDISP_TB][INIT] Bell co-simulation started.");
         $display("[QDISP_TB][INIT] NUM_QUBITS=%0d  FIXED_LATENCY=%0d  TIME_WIDTH=%0d",
                  NUM_QUBITS, FIXED_LATENCY, TIME_WIDTH);
@@ -540,9 +710,10 @@ module vproc_qdisp_bell_tb;
         rst = 1'b1;
         repeat (10) @(posedge clk);
         rst = 1'b0;
+        expect_rot_gateid = $test$plusargs("EXPECT_ROT_GATEID");
 
         // Run until completion or timeout
-        for (i = 0; i < MAX_CYCLES; i = i + 1) begin
+        for (i = 0; i < max_cycles_limit; i = i + 1) begin
             @(posedge clk);
 
             // Stop after we've been idle for a while past the last event (gives
@@ -559,14 +730,12 @@ module vproc_qdisp_bell_tb;
                     $display("[QDISP_TB][cycle=%0d][DONE] %0d idle cycles after last event",
                              cycle_count, POST_EVENT_IDLE_CYCLES);
                 end
-                print_summary;
-                $finish;
+                finish_simulation(0);
             end
         end
 
-        $display("[QDISP_TB][FAIL] timeout at %0d cycles", MAX_CYCLES);
-        print_summary;
-        $finish;
+        $display("[QDISP_TB][FAIL] timeout at %0d cycles", max_cycles_limit);
+        finish_simulation(1);
     end
 
 endmodule

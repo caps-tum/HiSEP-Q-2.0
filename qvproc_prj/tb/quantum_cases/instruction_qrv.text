@@ -1,3 +1,10 @@
+LEGACY OP-V FIXTURE NOTES
+
+These notes describe the matching split `.mem` image used by legacy trace benches.
+Words, `vd`/`vm` fields, and mnemonic spellings here are not canonical custom-0
+assembly. Use `docs/HiSEPQ_ISA_spec.md` for the current ISA and `demo/*.mem` for
+the maintained unified stimuli.
+
 Revision note
 - `QRV` now follows the mixed-width quantum semantics discussed under the `量子指令扩展` topic.
 - `vs1` remains an `e8` vector and exports `element1` as one 8-bit slice per cycle.

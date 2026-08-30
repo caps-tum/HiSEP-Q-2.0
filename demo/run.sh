@@ -156,13 +156,18 @@ run_one() {
     local mem_file="$1"
     local log_file="${2:-xsim.log}"
     local gui="${3:-0}"
+    local -a testplusargs=(--testplusarg "MEM_FILE=${mem_file}")
+
+    if [[ "${mem_file##*/}" == "qv_rot_gateid.mem" ]]; then
+        testplusargs+=(--testplusarg "EXPECT_ROT_GATEID")
+    fi
 
     if [[ $gui -eq 1 ]]; then
         xsim vproc_qdisp_bell_tb_sim --gui \
-            --testplusarg "MEM_FILE=${mem_file}"
+            "${testplusargs[@]}"
     else
         xsim vproc_qdisp_bell_tb_sim --runall \
-            --testplusarg "MEM_FILE=${mem_file}" \
+            "${testplusargs[@]}" \
             2>&1 | tee "${log_file}"
     fi
 }

@@ -1,13 +1,13 @@
-<mxfile host="app.diagrams.net" modified="2026-03-16T12:00:00.000Z" agent="Codex" version="24.7.17">
+<mxfile host="app.diagrams.net" modified="2026-08-27T12:00:00.000Z" agent="HiSEP-Q audit" version="24.7.17">
   <diagram id="vproc-rtl-connectivity" name="RTL Connectivity">
     <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1400" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="title" value="qvproc_vivado_predef/rtl connectivity" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=24;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="title" value="`vproc_top` internal RTL connectivity (timed dispatcher not shown)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=24;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="20" y="10" width="520" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="note" value="Based on structural analysis of `/rtl`.&#xa;`vproc_core` always contains the shown decode/dispatch/vreg/writeback flow.&#xa;`vproc_pipeline_wrapper` instantiates `PIPE_CNT` configuration-dependent lanes, each reducing to `vproc_pipeline -&gt; vproc_vregunpack -&gt; vproc_unit_mux -&gt; unit wrapper(s) -&gt; vproc_vregpack`." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;align=left;spacing=6;" vertex="1" parent="1">
+        <mxCell id="note" value="Scope: internal vector-core connectivity only.&#xa;The maintained synthesis/simulation top is `vproc_qdisp_top`, which wraps `vproc_top` with `quantum_dispatcher`.&#xa;See `docs/architecture.md` for the complete quantum stream and AWG path." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;align=left;spacing=6;" vertex="1" parent="1">
           <mxGeometry x="20" y="50" width="560" height="90" as="geometry" />
         </mxCell>
         <mxCell id="extmem" value="External Memory Bus&#xa;`mem_*`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;" vertex="1" parent="1">

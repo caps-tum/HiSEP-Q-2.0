@@ -1,10 +1,8 @@
 `timescale 1ns / 1ps
 //
-// vproc_qdisp_top.sv  –  NEW FILE, do not modify vproc_top.sv
-//
-// Co-simulation wrapper that glues:
-//   u_vproc  : vproc_top  (RISC-V + RVV vector core, original unmodified)
-//   u_qdisp  : quantum_dispatcher (per-qubit timed gate scheduler)
+// Dispatcher-integrated simulation/synthesis wrapper.
+//   u_vproc : Ibex + vproc and raw quantum stream
+//   u_qdisp : per-qubit timed gate scheduler
 //
 // An internal free-running t_cnt counter (TIME_WIDTH bits) resets together
 // with the rest of the design and is shared with quantum_dispatcher.
@@ -60,7 +58,7 @@ module vproc_qdisp_top
     output wire                              quantum_valid_o,
     output wire [4:0]                        quantum_op_o,
     output wire [2:0]                        quantum_instr_id_o,
-    output wire [4:0]                        quantum_vd_addr_o,
+    output wire [4:0]                        quantum_vd_addr_o, // legacy diagnostic; not a custom-0 vd
     output wire [31:0]                       quantum_elem1_o,
     output wire [31:0]                       quantum_elem2_o,
     output wire [31:0]                       quantum_elem3_o,
@@ -82,9 +80,12 @@ module vproc_qdisp_top
     output wire [NUM_QUBITS-1:0]             qubit_valid_o,
     output wire [NUM_QUBITS-1:0]             qubit_error_o,
     output wire [NUM_QUBITS-1:0]             qubit_ctrl_o,
+    output wire [32*NUM_QUBITS-1:0]          qubit_payload_o,
+    output wire [NUM_QUBITS-1:0]             qubit_payload_valid_o,
     output wire                              invalid_index_error_o,
     output wire                              invalid_pair_error_o,
     output wire                              illegal_error_o,
+    output wire                              capacity_error_o,
 
     // Expose t_cnt so the testbench can read dispatch timing
     output wire [TIME_WIDTH-1:0]             t_cnt_o
@@ -179,9 +180,12 @@ module vproc_qdisp_top
         .qubit_valid_o       ( qubit_valid_o         ),
         .qubit_error_o       ( qubit_error_o         ),
         .qubit_ctrl_o        ( qubit_ctrl_o          ),
+        .qubit_payload_o        ( qubit_payload_o        ),
+        .qubit_payload_valid_o  ( qubit_payload_valid_o  ),
         .invalid_index_error_o ( invalid_index_error_o ),
         .invalid_pair_error_o  ( invalid_pair_error_o  ),
-        .illegal_error_o       ( illegal_error_o       )
+        .illegal_error_o       ( illegal_error_o       ),
+        .capacity_error_o      ( capacity_error_o      )
     );
 
 endmodule

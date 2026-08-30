@@ -48,9 +48,14 @@ quantum_valid && quantum_data_ready
 
 `QV.PAIR` produces one primary/control qubit from `elem1` and one secondary/target qubit from `elem2` per accepted beat. The role mapping is exported through `qubit_ctrl_o`.
 
+The raw stream can carry scalar or angle data in `quantum_elem2`, but each timed
+FIFO currently stores only `{dispatch_time, role, GateID}`. No payload or
+instruction-class tag reaches the fire-time AWG boundary. Fixed gates work with
+a globally unique GateID; parameterized rotations remain incomplete.
+
 ## Addressing and capacity
 
-The instruction stream uses 8-bit direct qubit indices. The current ISA specification restricts direct-index software to `0..127`, with bit 7 reserved. The number of actual output channels is the `NUM_QUBITS` parameter:
+The instruction stream uses 8-bit direct qubit indices in the range `0..255`. The number of actual output channels is the `NUM_QUBITS` parameter:
 
 - wrapper default: 8;
 - unified co-simulation configuration: 16;
@@ -84,26 +89,37 @@ effective_offset = block_imm != 0 ? block_imm : FIXED_LATENCY
 
 `quantum_last_cycle` is deliberately not used: directed tracing showed it remained low on every beat of representative QV.SINGLE/QV.PAIR streams. Instruction-ID transition handles all non-final instructions; the idle path handles a final instruction for which no next ID arrives.
 
-This removes stream length from the 5-bit offset requirement because the target time is created only after the selected set has been accumulated. Verilator and xsim regressions have shown a VL=128/m8 `qv_pair` instruction firing its selected in-range outputs on one common AWG line instead of consecutive `t_cnt` values.
+This removes stream length from the 5-bit offset requirement because the target
+time is created only after the selected set has been accumulated. The standalone
+dispatcher regression checks a synchronized burst directly. The checked-in
+VL=128 `qv_pair` image is not positive evidence for this property: with the
+unified testbench `NUM_QUBITS=16`, most indices are out of range and the case
+correctly fails.
 
-The core race is resolved, but the complete contract still has open items:
+The core race is resolved. The repeated-qubit/conflict policy that was previously undefined here has since been decided and implemented (user-confirmed, 2026-08-26): repeating a qubit within one instruction, or scheduling the same qubit at the same absolute `dispatch_time` from different instructions, is illegal and rejects the whole accumulated instruction (zero fires). The same qubit at different `dispatch_time`s is legal and queues normally. This is verified by the standalone `quantum_dispatcher_tb.v` regression (23/23 checks) and by directed `.mem` fixtures (`qv_diff_time_queue.mem` for the legal case).
 
-- a bitmap collapses repeated occurrences of one qubit within an instruction; the intended multiset/conflict behavior is not defined;
-- `QV.PAIR` repeated-index role resolution needs an ISA policy;
-- burst behavior with full per-qubit FIFOs needs a directed test;
+Remaining open items:
+
+- burst behavior with full per-qubit FIFOs needs a directed test (a burst can currently partially execute if one destination FIFO is full and another is not -- no burst-wide capacity preflight exists);
 - the 8-cycle idle threshold needs a proven bound against every legal intra-stream bubble;
 - `block_imm=0` must leave enough FIFO/controller setup margin;
-- invalid indices now produce a same-cycle `invalid_index_error_o` pulse, but it is not yet sticky or part of trusted pass/fail.
+- invalid-index/invalid-pair/FIFO-overflow/illegal pulses are separately counted.
+  The unified testbench calls `$fatal` on failure; Verilator returns non-zero,
+  while the current xsim runner still exits zero. There is no per-case
+  expected-error scoreboard. Per-qubit queues are FIFO-ordered rather than
+  time-sorted, so a later-enqueued earlier timestamp can be blocked behind the
+  queue head and fire late.
 
 ## Timed FIFO and controller
 
-Each per-qubit entry contains `{dispatch_time, role, GateID}`. The time controller follows `IDLE -> WAIT -> ISSUE`. In the current RTL, WAIT uses an unsigned expiration comparison:
+Each per-qubit entry contains `{dispatch_time, role, GateID}`. The time controller follows `IDLE -> WAIT -> ISSUE`. The WAIT expiration test is a modular, wraparound-safe comparison, not a plain unsigned one:
 
 ```text
-t_inst <= t_cnt + 1
+time_since_target = (t_cnt + 1) - t_inst    // modular subtraction, wraps by design
+target_reached    = ~time_since_target[TIME_WIDTH-1]   // sign bit of the modular delta
 ```
 
-This deliberately releases late entries but is unsafe across time-counter wraparound. The required wraparound regression is listed in [`verification.md`](verification.md).
+This is valid as long as the scheduled distance stays under half the counter range, the standard assumption for this kind of modular comparison. Verified with a throwaway `TIME_WIDTH=4` directed test comparing wrapping vs. non-wrapping cases at matching offsets (0, 1, 2, and the maximum supported offset); not yet retained as a permanent checked-in regression. The required permanent wraparound regression is listed in [`verification.md`](verification.md).
 
 ## Measurement and feedback
 
@@ -119,4 +135,9 @@ The current working tree also accepts `measure_result_i[31:0]` and latches it in
 
 ## Build boundary
 
-The documented Vivado rebuild script currently selects `vproc_top`, not `vproc_qdisp_top`, and omits the dispatcher RTL from the synthesis fileset. Therefore the rebuild flow does not yet produce the complete diagram shown above. See [`qvproc_prj/README.md`](../qvproc_prj/README.md) for the current build command.
+As of 2026-08-26, the Vivado rebuild script selects `vproc_qdisp_top`, includes
+the dispatcher RTL, and completes `synth_design` for its current legacy AU55C
+part setting. The intended future board is ZCU216, but that retargeting and the
+board-level `mem_*`/`measure_*`/`qubit_*` constraints are not implemented.
+Current acceptance is simulation-only; see
+[`qvproc_prj/README.md`](../qvproc_prj/README.md).

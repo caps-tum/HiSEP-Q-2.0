@@ -38,7 +38,7 @@ module vproc_elem #(
         output logic                   quantum_valid_o, // quantum qvproc
         output logic [4            :0] quantum_op_o, // quantum qvproc
         output logic [XIF_ID_W     -1:0] quantum_instr_id_o, // quantum qvproc
-        output logic [4            :0] quantum_vd_addr_o, // quantum qvproc
+        output logic [4            :0] quantum_vd_addr_o, // legacy name; custom-0 bits [11:7] are block_imm
         output logic [31           :0] quantum_elem1_o, // quantum qvproc
         output logic [31           :0] quantum_elem2_o, // quantum qvproc
         output logic [31           :0] quantum_elem3_o, // quantum qvproc
@@ -129,11 +129,6 @@ module vproc_elem #(
     assign pipe_in_ready_o   = state_res_ready;
     assign state_res_valid_d = pipe_in_valid_i;
     assign state_res_d       = pipe_in_ctrl_i;
-    // assign quantum_elem1_d   = pipe_in_op1_i; // quantum qvproc
-    // assign quantum_elem2_d   = pipe_in_op2_i; // quantum qvproc
-    // The original export forwarded the full 32-bit packed operand word. // quantum qvproc
-    // That exposed unpacker micro-steps and x-filled padding instead of a stable, meaningful quantum slice. // quantum qvproc
-
     logic [31:0]            elem1, elem2;
     logic                   elem_idx_valid_q;
     logic                   mask_q;
@@ -191,26 +186,13 @@ module vproc_elem #(
 
     logic quantum_slice_valid_q; // quantum qvproc
     assign quantum_elem1_d       = quantum_trace_slice(pipe_in_op1_i, pipe_in_ctrl_i.eew); // quantum qvproc
-    // assign quantum_elem2_d       = quantum_trace_slice(pipe_in_op2_i, pipe_in_ctrl_i.eew); // quantum qvproc
-    // assign quantum_elem2_d       = (pipe_in_ctrl_i.mode.elem.op == ELEM_QSINGLE) ? pipe_in_op2_i : quantum_trace_slice(pipe_in_op2_i, pipe_in_ctrl_i.eew); // quantum qvproc
-    // QSG now forwards a scalar 32-bit payload selected by rs2, while QRV forwards a full 32-bit
-    // angle operand. Other quantum instructions continue to use the normal EEW-sized slice export. // quantum qvproc
-    assign quantum_elem2_d       = ((pipe_in_ctrl_i.mode.elem.op == ELEM_QSINGLE) || (pipe_in_ctrl_i.mode.elem.op == ELEM_QROTV)) ?
+    // Bypass EEW slicing for full-word payload operations (scalar/angle
+    // arrives already at e32 from unpack).
+    assign quantum_elem2_d       = ((pipe_in_ctrl_i.mode.elem.op == ELEM_QSINGLE) || (pipe_in_ctrl_i.mode.elem.op == ELEM_QROTG) || (pipe_in_ctrl_i.mode.elem.op == ELEM_QROTV)) ?
                                    pipe_in_op2_i : quantum_trace_slice(pipe_in_op2_i, pipe_in_ctrl_i.eew); // quantum qvproc
-    // assign quantum_slice_valid_q = state_res_valid_q & result_valid_q & result_mask_q & ~state_res_q.vl_part_0 & quantum_phase_valid_q;
-    // The EMUL-based phase filter added here proved too aggressive in simulation: instead of
-    // removing only the two warm-up micro-steps for large LMUL cases, it also suppressed most of
-    // the valid m4/m8 element stream. Keep that experimental filter commented for reference and
-    // restore the broader slice-valid condition until a more precise phase discriminator is
-    // characterized. // quantum qvproc
     assign quantum_slice_valid_q = state_res_valid_q & result_valid_q & result_mask_q & ~state_res_q.vl_part_0; // quantum qvproc
 
-    /*
-     * Export per-slice quantum activity before the later vector pack/writeback
-     * stages merge slices into full vector-word writes. These outputs are only
-     * marked valid for the custom quantum opcodes so external logic can sample
-     * a clean, operation-aligned trace stream.
-     */
+    // Export one operation-aligned raw beat per valid quantum element.
     function automatic logic is_quantum_opcode(input opcode_elem op); // quantum qvproc
         begin
             is_quantum_opcode = (op == ELEM_QSINGLE) | 
@@ -219,24 +201,13 @@ module vproc_elem #(
                                 (op == ELEM_QROTV  ); 
         end
     endfunction
-    // assign quantum_valid_o       = state_res_valid_q & is_quantum_opcode(state_res_q.mode.elem.op);
-    // assign quantum_op_o          = state_res_q.mode.elem.op;
-    // assign quantum_instr_id_o    = state_res_q.id;
-    // assign quantum_vd_addr_o     = state_res_q.res_vaddr;
-    // assign quantum_elem1_o       = quantum_elem1_q;
-    // assign quantum_elem2_o       = quantum_elem2_q;
-    // The original export marked every buffered ELEM micro-step as valid and exposed the raw packed operand words. // quantum qvproc
-    // Keep these lines commented for reference while switching the trace interface to one meaningful slice per valid quantum element. // quantum qvproc
     assign quantum_valid_o       = quantum_slice_valid_q & is_quantum_opcode(state_res_q.mode.elem.op); // quantum qvproc
     assign quantum_op_o          = state_res_q.mode.elem.op; // quantum qvproc
     assign quantum_instr_id_o    = state_res_q.id; // quantum qvproc
     assign quantum_vd_addr_o     = state_res_q.res_vaddr; // quantum qvproc
     assign quantum_elem1_o       = quantum_trace_slice(quantum_elem1_q, state_res_q.eew); // quantum qvproc
-    // assign quantum_elem2_o       = quantum_trace_slice(quantum_elem2_q, state_res_q.eew); // quantum qvproc
-    // assign quantum_elem2_o       = (state_res_q.mode.elem.op == ELEM_QSINGLE) ? quantum_elem2_q : quantum_trace_slice(quantum_elem2_q, state_res_q.eew); // quantum qvproc
-    // QSG exports the scalar rs2 payload on elem2 and its packed gate/control metadata on elem3.
-    // QRV exports its full 32-bit angle operand on elem2 every cycle. // quantum qvproc
-    assign quantum_elem2_o       = ((state_res_q.mode.elem.op == ELEM_QSINGLE) || (state_res_q.mode.elem.op == ELEM_QROTV)) ?
+    // Preserve the buffered full-word operand for payload ops.
+    assign quantum_elem2_o       = ((state_res_q.mode.elem.op == ELEM_QSINGLE) || (state_res_q.mode.elem.op == ELEM_QROTG) || (state_res_q.mode.elem.op == ELEM_QROTV)) ?
                                    quantum_elem2_q : quantum_trace_slice(quantum_elem2_q, state_res_q.eew); // quantum qvproc
     assign quantum_elem3_o       = ((state_res_q.mode.elem.op == ELEM_QSINGLE) || (state_res_q.mode.elem.op == ELEM_QPAIR) || (state_res_q.mode.elem.op == ELEM_QROTG) || (state_res_q.mode.elem.op == ELEM_QROTV)) ?
                                    state_res_q.quantum_elem3_raw : 32'b0; // quantum qvproc
@@ -470,7 +441,7 @@ module vproc_elem #(
                 // Emit one valid result per active element.
                 result_valid_d = 1'b1; 
             end
-            ELEM_QROTV: begin // quantum qvproc TODO: the second operand from the second vector register should have sew = 32 instead of 8.
+            ELEM_QROTV: begin // quantum qvproc (elem2 arrives at e32 via unpack_op_eew_override)
                 // Per-element rotation amount comes from second vector operand.
                 // Apply per-lane rotate-left with lane-specific shift from elem2.
                 result_d       = rotl_elem(elem1, elem2[4:0], pipe_in_ctrl_i.eew); 

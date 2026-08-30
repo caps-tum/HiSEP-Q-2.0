@@ -80,6 +80,11 @@ set design_rel_files [list \
   rtl/vproc_vregunpack.sv \
   rtl/vproc_xif.sv \
   rtl/vproc_top.sv \
+  rtl/inst_fifo.v \
+  rtl/time_controller.v \
+  rtl/timed_fifo.v \
+  rtl/quantum_dispatcher.v \
+  rtl/vproc_qdisp_top.sv \
   core/ibex/vendor/lowrisc_ip/ip/prim/rtl/prim_cipher_pkg.sv \
   core/ibex/vendor/lowrisc_ip/ip/prim/rtl/prim_util_pkg.sv \
   core/ibex/rtl/ibex_tracer_pkg.sv \
@@ -117,15 +122,23 @@ set sim_rel_files [list \
 
 create_project $project_name $project_dir -part xcu55c-fsvh2892-2L-e -force
 
-set_property board_part xilinx.com:au55c:part0:1.0 [current_project]
+# The AU55C board package may not be installed in every Vivado (BUILD-001);
+# synthesis only needs the bare part, so degrade to a warning instead of dying.
+if {[catch {set_property board_part xilinx.com:au55c:part0:1.0 [current_project]} bp_msg]} {
+    puts "WARNING: AU55C board_part not installed; continuing with bare part xcu55c-fsvh2892-2L-e. ($bp_msg)"
+}
 set_property default_lib xil_defaultlib [current_project]
 set_property target_language Verilog [current_project]
 set_property simulator_language Mixed [current_project]
 
 add_files -fileset sources_1 [resolve_bundle_paths $bundle_root $design_rel_files]
 add_files -fileset sim_1     [resolve_bundle_paths $bundle_root $sim_rel_files]
+add_files -fileset constrs_1 [resolve_bundle_paths $bundle_root [list constr/timing.xdc]]
 
-set_property top vproc_top [get_filesets sources_1]
+# vproc_qdisp_top wraps vproc_top together with the quantum_dispatcher, so it
+# is the synthesis top -- vproc_top alone omits the AWG-facing gate/valid/
+# error outputs entirely.
+set_property top vproc_qdisp_top [get_filesets sources_1]
 set_property top vproc_qrv_tb [get_filesets sim_1]
 set_property top_lib xil_defaultlib [get_filesets sim_1]
 

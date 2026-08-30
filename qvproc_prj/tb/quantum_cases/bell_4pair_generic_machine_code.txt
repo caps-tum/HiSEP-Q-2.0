@@ -1,3 +1,7 @@
+// LEGACY OP-V COMPATIBILITY FIXTURE.
+// This annotation matches the split legacy image, not canonical custom-0 assembly.
+// See docs/HiSEPQ_ISA_spec.md and demo/*.mem for the maintained flow.
+
 06600313
 05500393
 00400293

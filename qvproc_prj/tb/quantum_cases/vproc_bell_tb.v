@@ -1,4 +1,6 @@
 `timescale 1ns / 1ps
+// LEGACY TRACE BENCH: observational/debug use only; not an acceptance test.
+// See docs/verification.md for maintained regression scope.
 
 module vproc_bell_tb;
 

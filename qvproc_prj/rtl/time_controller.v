@@ -6,10 +6,10 @@
 //
 // State machine:
 //   IDLE  : assert fifo_rd_en; when FIFO is non-empty go to WAIT
-//   WAIT  : hold until t_cnt + 1 == t_inst, then go to ISSUE
+//   WAIT  : hold until t_cnt + 1 reaches or has passed t_inst, then ISSUE
 //   ISSUE : drive o_data = opcode for one cycle, return to IDLE
 //
-// The gate appears on o_data at the cycle where t_cnt == t_inst.
+// On-time entries issue at t_inst; an overdue entry issues as soon as it reaches WAIT.
 
 module time_controller #(
     parameter TIME_WIDTH = 20,

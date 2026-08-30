@@ -1461,8 +1461,7 @@ module vproc_decoder #(
                         // HiSEPQ custom quantum instructions (OP-V / custom funct6 space).
                         // The chosen funct6 values avoid overlap with existing RVV decode keys.
                         {6'b111100, 3'b000}: begin  // Legacy QV.SINGLE placeholder space (e.g. 0x78/0x79)
-                            // Keep the legacy placeholder encodings alive just for existing exploratory tests, 
-                            // but I prefer the fixed H-gate encoding below.
+                            // Retained only for legacy OP-V compatibility fixtures.
                             unit_o             = UNIT_ELEM;
                             mode_o.elem.op     = ELEM_QSINGLE;
                             mode_o.elem.xreg   = 1'b0;
@@ -1581,10 +1580,6 @@ module vproc_decoder #(
                                 LMUL_F2, // quantum qvproc
                                 LMUL_1 , // quantum qvproc
                                 LMUL_2 : ; // quantum qvproc
-                                // Older exploratory versions accepted all LMUL values here. Keep
-                                // that behavior commented for reference while enforcing the mixed-
-                                // width storage limit for QRV. // quantum qvproc
-                                // LMUL_4, LMUL_8: ; // quantum qvproc
                                 default: instr_illegal = 1'b1; // quantum qvproc
                             endcase // quantum qvproc
                         end
@@ -1601,7 +1596,7 @@ module vproc_decoder #(
             // Migrated out of OP-V per RFC #3 so the quantum ISA no longer squats
             // in the standard vector encoding space.  funct3 (instr[14:12]) selects
             // the instruction class; funct7 (instr[31:25]) carries the GateID for
-            // QV.SINGLE / QV.PAIR.  block_imm = instr[11:7] (5-bit, mask bit removed).
+            // all four classes. block_imm = instr[11:7] (5-bit, mask bit removed).
             // Operands reuse the current vtype (vsew/lmul) set by a preceding vsetvli.
             7'h0b: begin
                 // quantum ops do not write back to a vector register
@@ -1625,9 +1620,10 @@ module vproc_decoder #(
                         mode_o.elem.op     = ELEM_QPAIR;
                         mode_o.elem.xreg   = 1'b0;
                         mode_o.elem.masked = 1'b0;
-                        rs2_o.vreg         = 1'b1;       // vs1 (target) -> elem1
+                        // QV.PAIR: vs1 -> elem1/control, vs2 -> elem2/target.
+                        rs2_o.vreg         = 1'b1;
                         rs2_o.r.vaddr      = instr_vs1;
-                        rs1_o.vreg         = 1'b1;       // vs2 (source) -> elem2
+                        rs1_o.vreg         = 1'b1;
                         rs1_o.xreg         = 1'b0;
                         rs1_o.r.vaddr      = instr_vs2;
                     end
@@ -1635,7 +1631,9 @@ module vproc_decoder #(
                         unit_o             = UNIT_ELEM;
                         mode_o.elem.op     = ELEM_QROTG;
                         mode_o.elem.xreg   = 1'b0;
-                        mode_o.elem.masked = instr_masked;
+                        // custom-0 defines no ROT mask bit. instr[31:25] is GateID;
+                        // do not reinterpret GateID[0] as a v0 mask control.
+                        mode_o.elem.masked = 1'b0;
                         rs2_o.vreg         = 1'b1;
                         rs2_o.r.vaddr      = instr_vs1;
                         rs1_o.vreg         = 1'b0;
@@ -1646,7 +1644,9 @@ module vproc_decoder #(
                         unit_o             = UNIT_ELEM;
                         mode_o.elem.op     = ELEM_QROTV;
                         mode_o.elem.xreg   = 1'b0;
-                        mode_o.elem.masked = instr_masked;
+                        // custom-0 defines no ROT mask bit. instr[31:25] is GateID;
+                        // do not reinterpret GateID[0] as a v0 mask control.
+                        mode_o.elem.masked = 1'b0;
                         rs2_o.vreg         = 1'b1;
                         rs2_o.r.vaddr      = instr_vs1;
                         rs1_o.vreg         = 1'b1;

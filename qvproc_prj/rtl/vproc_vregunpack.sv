@@ -275,6 +275,22 @@ module vproc_vregunpack
     assign qrotv_op2_ready_o = stage_state[UNPACK_STAGES].qrotv_startup &
                                op_output_valid[1]; // quantum qvproc
 
+`ifdef ROT005_TRACE // quantum qvproc
+    generate if (OP_CNT > 1) begin : g_rot005_trace // quantum qvproc
+        always_ff @(posedge clk_i) begin // quantum qvproc
+            if ((stage_valid[UNPACK_STAGES] && stage_state[UNPACK_STAGES].op_eew_override[1] &&
+                 (stage_state[UNPACK_STAGES].op_eew[1] == VSEW_32)) ||
+                (stage_state[OP_STAGE[1]].op_load[1] && stage_valid[OP_STAGE[1]] &&
+                 stage_state[OP_STAGE[1]].op_eew_override[1])) begin // quantum qvproc
+                $display("[ROT005U] t=%0t ld=%b addr1=%0d buf1=%08x_%08x_%08x_%08x d1=%08x outv=%0d rdy=%0d hold=%0d", // quantum qvproc
+                         $time, op_load, op_vreg_addr[1],
+                         op_buffer[1][127:96], op_buffer[1][95:64], op_buffer[1][63:32], op_buffer[1][31:0],
+                         op_data[1][31:0], pipe_out_valid_o, pipe_out_ready_i, qrotv_out_hold); // quantum qvproc
+            end // quantum qvproc
+        end // quantum qvproc
+    end endgenerate // quantum qvproc
+`endif // quantum qvproc
+
     // Addressing signals and vreg addresses of operands and masks;  addressing takes place in the
     // stage prior to loading the operand buffer if the respective vreg is buffered and in the same
     // stage otherwise.
@@ -462,6 +478,17 @@ module vproc_vregunpack
             assign qrotv_startup_hold = stage_state[OP_STAGE[i]].qrotv_startup &
                                         ~(stage_state[OP_STAGE[i]].op_eew_override[i] &
                                           (stage_state[OP_STAGE[i]].op_eew[i] == VSEW_32)); // quantum qvproc
+            // QROTV angle buffer: hold it while startup-tagged beats sit in the
+            // load or extraction stage. Those beats get discarded downstream but
+            // used to shift the buffer anyway, pairing element k with angle
+            // word k+1. // quantum qvproc
+            logic qrotv_angle_freeze; // quantum qvproc
+            assign qrotv_angle_freeze = ((stage_state[OP_STAGE[i]].qrotv_startup &
+                                          stage_state[OP_STAGE[i]].op_eew_override[i] &
+                                          (stage_state[OP_STAGE[i]].op_eew[i] == VSEW_32)) |
+                                         (stage_state[OP_STAGE[i] + 1].qrotv_startup &
+                                          stage_state[OP_STAGE[i] + 1].op_eew_override[i] &
+                                          (stage_state[OP_STAGE[i] + 1].op_eew[i] == VSEW_32))); // quantum qvproc
             always_comb begin
                 // by default, retain current value for upper part and assign default value for
                 // lower part
@@ -475,6 +502,10 @@ module vproc_vregunpack
                         op_buffer_next[i][OP_VPORT_W-OP_W[i]-1:0] = op_buffer[i][OP_VPORT_W-1:OP_W[i]];
                     end // quantum qvproc
                 end
+                // covers every shift path above; load below still wins // quantum qvproc
+                if (qrotv_angle_freeze) begin // quantum qvproc
+                    op_buffer_next[i] = op_buffer[i]; // quantum qvproc
+                end // quantum qvproc
                 // load signal overrides all others and moves vreg value into buffer
                 if (op_load[i]) begin
                     op_buffer_next[i][OP_VPORT_W-1:0] = op_vreg_data[i][OP_VPORT_W-1:0];

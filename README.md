@@ -2,9 +2,16 @@
 
 **A RISC-V vector architecture for scalable quantum-control experiments**
 
-HiSEP-Q combines an Ibex RV32 scalar core, an RVV-compatible vproc vector core, and a per-qubit timed dispatcher. Four custom vector instructions generate qubit-index, gate, role, and angle streams for an AWG/control backend.
+HiSEP-Q combines an Ibex RV32 scalar core, an RVV-compatible vproc vector core,
+and a per-qubit timed dispatcher. Four custom instructions generate raw qubit-index, gate, role, and angle streams.
+The dispatcher currently emits timed GateID and role outputs; parameterized
+rotation payload at the AWG boundary remains open.
 
-The project is an active RTL prototype. Small Bell/measurement flows have been observed end to end in simulation; large-vector timing, strict self-checking regression, and complete FPGA-top integration are still in progress. Verification scope and remaining gaps are documented in [`docs/verification.md`](docs/verification.md).
+The project is an active RTL prototype. The current milestone is Verilator
+co-simulation with deterministic measurement input and AWG event output,
+including feedback programs. FPGA deployment on ZCU216 is future work.
+Verification scope and remaining gaps are documented in
+[`docs/verification.md`](docs/verification.md).
 
 ## Architecture
 
@@ -28,7 +35,7 @@ The current instruction encoding uses RISC-V **custom-0** opcode `0x0B`. Legacy 
 | Instruction | `funct3` | Main operands | Purpose |
 |---|---:|---|---|
 | `QV.SINGLE` | `000` | GateID, scalar payload, index vector | Single-qubit gate or measurement |
-| `QV.PAIR` | `001` | source/control and target index vectors | Two-qubit gate |
+| `QV.PAIR` | `001` | control and target index vectors | Two-qubit gate |
 | `QV.ROT.G` | `010` | scalar angle and index vector | Shared-angle rotation |
 | `QV.ROT.V` | `011` | e32 angle vector and e8 index vector | Per-qubit rotation |
 
@@ -98,7 +105,9 @@ HiSEP-Q-2.0/
 - small Bell/measurement stream and AWG activity: observed in simulation;
 - measurement-result CSR `0xCC0`: present in the current working tree, trusted regression pending;
 - complete self-checking suite: open (see verification);
-- large-vector simultaneous dispatch: core burst mechanism implemented; repeated-index and boundary semantics remain open (see verification);
-- complete FPGA wrapper synthesis flow: open (see qvproc project notes).
+- large-vector simultaneous dispatch: core burst mechanism implemented; repeated-qubit and same-timestamp conflicts are a defined, tested illegal case (reject the whole instruction), different timestamps queue and fire independently; per-qubit FIFO-full behavior and decreasing-timestamp order remain open (see verification);
+- FPGA status: the dispatcher-integrated wrapper synthesizes with the current
+  AU55C part setting in the rebuild script; ZCU216 retargeting and board integration
+  are future work and are not part of the current acceptance target.
 
 Detailed gaps and acceptance conditions are maintained in [`docs/verification.md`](docs/verification.md). Local development checkouts may additionally use the ignored `existing_problem.md` as a working issue ledger.

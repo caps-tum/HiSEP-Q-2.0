@@ -1,3 +1,7 @@
+// LEGACY OP-V COMPATIBILITY FIXTURE.
+// This annotation matches the split legacy image, not canonical custom-0 assembly.
+// See docs/HiSEPQ_ISA_spec.md and demo/*.mem for the maintained flow.
+
 // =====================================================================
 // Bell-state reference data memory layout
 // $readmemh format; @00000400 = byte address 0x00001000 (word index 0x400)
