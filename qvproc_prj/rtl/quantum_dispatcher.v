@@ -67,11 +67,13 @@ module quantum_dispatcher #(
     //              0 = this qubit is the target side  (elem2/vs2).
     // For QV.SINGLE / QV.ROTG / QV.ROTV: always 1.
     output wire [NUM_QUBITS-1:0]             qubit_ctrl_o,
-    // Opaque 32-bit payload (currently: ROT.G/ROT.V rotation angle) queued
-    // and fired atomically with the gate/role above. RTL never interprets
-    // this value -- it is a software/backend ABI, not an RTL contract (same
-    // convention as measure_result_i). Valid only when the corresponding
-    // qubit_payload_valid_o bit is set; SINGLE/PAIR fires leave it at 0/don't-care.
+    // 32-bit payload queued and fired atomically with the gate/role above.
+    // ROT.G/ROT.V: the rotation angle, opaque to RTL (a software/backend ABI,
+    // same convention as measure_result_i). QV.PAIR: the partner qubit index
+    // in [7:0], upper bits 0 -- the target's index on the control, the
+    // control's on the target -- so the backend can tell the pairs of one
+    // vector PAIR apart. Valid only when qubit_payload_valid_o is set; SINGLE
+    // fires leave it at 0/don't-care. The GateID says how to read it.
     output wire [32*NUM_QUBITS-1:0]          qubit_payload_o,
     output wire [NUM_QUBITS-1:0]             qubit_payload_valid_o,
 
@@ -160,7 +162,8 @@ module quantum_dispatcher #(
     reg                   active_illegal_q; // reject the whole accumulated instruction
     reg [$clog2(IDLE_FLUSH_CYCLES+1)-1:0] idle_ctr_q;
 
-    // Per-qubit payload (ROT.G/ROT.V angle). Indexed by physical qubit, not
+    // Per-qubit payload (ROT.G/ROT.V angle, or QV.PAIR partner index; see the
+    // qubit_payload_o port comment). Indexed by physical qubit, not
     // by beat order, so ROT.V's per-element angles land next to the right
     // qubit even though beats for different qubits arrive on different
     // cycles. ROT.G broadcasts the same value to every touched qubit's
@@ -173,10 +176,14 @@ module quantum_dispatcher #(
     // (enforced by metadata_mismatch above), so "does this instruction carry
     // a payload" is a single derived bit, not per-qubit state -- avoids a
     // second register that could drift out of sync with active_op_q.
-    wire active_has_payload = (active_op_q == ELEM_QROTG) || (active_op_q == ELEM_QROTV);
+    wire active_has_payload = (active_op_q == ELEM_QROTG) || (active_op_q == ELEM_QROTV) ||
+                              (active_op_q == ELEM_QPAIR);
     wire beat_has_payload = beat_valid &&
                             ((quantum_op == ELEM_QROTG) || (quantum_op == ELEM_QROTV)) &&
                             (elem1_qubit < NUM_QUBITS);
+    // Same condition as a pair beat's touch: both endpoints valid and distinct.
+    wire beat_pair_partner = beat_valid && (quantum_op == ELEM_QPAIR) &&
+                             !pair_invalid_index && (elem2_qubit != elem1_qubit);
 
     // A new ID closes the previously accumulated instruction.
     wire new_instr  = beat_valid && (!active_valid_q || (quantum_instr_id != active_id_q));
@@ -227,6 +234,10 @@ module quantum_dispatcher #(
             active_illegal_q <= beat_illegal;
             idle_ctr_q     <= 0;
             if (beat_has_payload) payload_q[elem1_qubit] <= quantum_elem2;
+            if (beat_pair_partner) begin
+                payload_q[elem1_qubit] <= {24'b0, elem2_qubit};
+                payload_q[elem2_qubit] <= {24'b0, elem1_qubit};
+            end
         end else if (beat_valid) begin
             // Any repeated qubit invalidates the accumulated instruction.
             touched_q      <= touched_q | beat_touch;
@@ -234,6 +245,10 @@ module quantum_dispatcher #(
             active_illegal_q <= active_illegal_q | beat_illegal;
             idle_ctr_q     <= 0;
             if (beat_has_payload) payload_q[elem1_qubit] <= quantum_elem2;
+            if (beat_pair_partner) begin
+                payload_q[elem1_qubit] <= {24'b0, elem2_qubit};
+                payload_q[elem2_qubit] <= {24'b0, elem1_qubit};
+            end
         end else if (idle_flush) begin
             // No later ID will flush the final instruction.
             touched_q      <= {NUM_QUBITS{1'b0}};

@@ -197,6 +197,14 @@ The mapping is checked by the Bell co-simulation: `elem1`/`vs1` fires with
 `role=CTRL`, and `elem2`/`vs2` fires with `role=TGT`. Test evidence belongs in
 [`verification.md`](verification.md).
 
+**Partner at the AWG boundary:** each endpoint fires with `payload_valid=1` and
+the other endpoint's physical qubit index in `payload[7:0]` (upper bits 0): the
+control carries its target, the target its control. Role bits alone cannot tell
+the pairs of one vector instruction apart (`3->4, 5->6` and `3->6, 5->4` fire the
+same roles on the same qubits), and a backend needs the pair to pick the drive
+frequency or coupler. The GateID tells the backend how to read the payload
+(angle for rotations, partner for two-qubit gates).
+
 <!-- **Implemented GateIDs:**
 
 | GateID   | Mnemonic    | Status         |

@@ -51,7 +51,10 @@ quantum_valid && quantum_data_ready
 The dispatcher stores `{payload, payload_valid, role, GateID}` with each
 per-qubit timed command. `QV.ROT.G` carries one scalar 32-bit payload to every
 selected qubit; `QV.ROT.V` carries one 32-bit payload per selected qubit. The
-payload is opaque to RTL and reaches the AWG-facing output unchanged. GateIDs
+rotation payload is opaque to RTL and reaches the AWG-facing output unchanged.
+`QV.PAIR` sets `payload_valid` and puts the partner qubit index in
+`payload[7:0]` on both endpoints (target index on the control, control index on
+the target), so the pairs of one vector instruction are distinguishable. GateIDs
 use one global namespace, so no separate instruction-class tag is required.
 
 ## Addressing and capacity
@@ -98,7 +101,7 @@ VL=128 `qv_pair` image is not positive evidence for this property: with the
 unified testbench `NUM_QUBITS=16`, most indices are out of range and the case
 correctly fails.
 
-The core race is resolved. The repeated-qubit/conflict policy that was previously undefined here has since been decided and implemented (user-confirmed, 2026-08-26): repeating a qubit within one instruction, or scheduling the same qubit at the same absolute `dispatch_time` from different instructions, is illegal and rejects the whole accumulated instruction (zero fires). The same qubit at different `dispatch_time`s is legal and queues normally. This is verified by the standalone `quantum_dispatcher_tb.v` regression (40/40 checks) and by directed `.mem` fixtures (`qv_diff_time_queue.mem` for the legal case).
+The core race is resolved. The repeated-qubit/conflict policy that was previously undefined here has since been decided and implemented (user-confirmed, 2026-08-26): repeating a qubit within one instruction, or scheduling the same qubit at the same absolute `dispatch_time` from different instructions, is illegal and rejects the whole accumulated instruction (zero fires). The same qubit at different `dispatch_time`s is legal and queues normally. This is verified by the standalone `quantum_dispatcher_tb.v` regression (44/44 checks) and by directed `.mem` fixtures (`qv_diff_time_queue.mem` for the legal case).
 
 Before a burst is committed, the dispatcher checks every touched per-qubit
 FIFO. If any destination cannot accept the command, the whole instruction is

@@ -154,11 +154,24 @@ older 2026-08-27 snapshot:
   and `elf2mem.sh` now place `.text` at the boot address (`@00000020`);
   the image boots with zero traps.
 
-The standalone dispatcher test passes 40/40 self-checking checks. It covers
+The standalone dispatcher test passes 44/44 self-checking checks. It covers
 valid synchronized bursts, index and pair bounds, atomic pair rejection,
 repeated qubits, identical pair endpoints, timestamp conflicts, legal
 increasing-time queuing, capacity-preflight atomic rejection, metadata
-consistency, and bit-exact payload round-trips.
+consistency, bit-exact payload round-trips, and the QV.PAIR partner payload
+(two pairs in one instruction, both pairings, and two queued PAIRs sharing a
+control: each endpoint carries its own partner; the previous RTL fired payload 0 on all four, so the two pairings were
+identical at the AWG boundary).
+
+Build and run it directly (no runner script), e.g. with Verilator:
+
+```bash
+R=qvproc_prj
+verilator --binary --timing -Wno-fatal -Wno-lint -Wno-style --top-module quantum_dispatcher_tb \
+  $R/rtl/inst_fifo.v $R/rtl/time_controller.v $R/rtl/timed_fifo.v \
+  $R/rtl/quantum_dispatcher.v $R/tb/quantum_cases/quantum_dispatcher_tb.v
+./obj_dir/Vquantum_dispatcher_tb      # ends with "[TB] DONE: checks=44 failures=0"
+```
 
 Focused checks reproduced these values:
 

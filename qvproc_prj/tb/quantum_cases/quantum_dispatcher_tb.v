@@ -440,6 +440,64 @@ module quantum_dispatcher_tb;
             $display("[PASS] SINGLE fire leaves payload_valid clear: %0d", last_fire_payload_valid[4]);
         end
 
+        // A vector PAIR carries each endpoint's partner in the payload, so
+        // 3->4,5->6 and 3->6,5->4 differ at the AWG boundary (same role bits).
+        begin : pair_partner
+            integer k;
+            reg [7:0] ctl [0:1];
+            reg [7:0] tgt [0:1];
+            for (k = 0; k < 2; k = k + 1) begin
+                ctl[0] = 8'd3; ctl[1] = 8'd5;
+                tgt[0] = (k == 0) ? 8'd4 : 8'd6;
+                tgt[1] = (k == 0) ? 8'd6 : 8'd4;
+                reset_case;
+                put_beat(3'd0, ELEM_QPAIR, ctl[0], tgt[0], 7'h66, 5'd10);
+                put_beat(3'd0, ELEM_QPAIR, ctl[1], tgt[1], 7'h66, 5'd10);
+                idle_bus;
+                wait_cycles(25);
+                checks = checks + 1;
+                if ((fire_per_q[3] != 1) || (fire_per_q[4] != 1) || (fire_per_q[5] != 1) || (fire_per_q[6] != 1) ||
+                    (last_fire_payload_valid[3] !== 1'b1) || (last_fire_payload_valid[4] !== 1'b1) ||
+                    (last_fire_payload_valid[5] !== 1'b1) || (last_fire_payload_valid[6] !== 1'b1) ||
+                    (last_fire_payload[ctl[0]] !== {24'b0, tgt[0]}) || (last_fire_payload[tgt[0]] !== {24'b0, ctl[0]}) ||
+                    (last_fire_payload[ctl[1]] !== {24'b0, tgt[1]}) || (last_fire_payload[tgt[1]] !== {24'b0, ctl[1]})) begin
+                    failures = failures + 1;
+                    $display("[FAIL] PAIR partner payload (3->%0d, 5->%0d): q3=%08x q4=%08x q5=%08x q6=%08x valid=%0d%0d%0d%0d",
+                             tgt[0], tgt[1], last_fire_payload[3], last_fire_payload[4], last_fire_payload[5],
+                             last_fire_payload[6], last_fire_payload_valid[3], last_fire_payload_valid[4],
+                             last_fire_payload_valid[5], last_fire_payload_valid[6]);
+                end else
+                    $display("[PASS] PAIR partner payload (3->%0d, 5->%0d): q3=%0d q4=%0d q5=%0d q6=%0d",
+                             tgt[0], tgt[1], last_fire_payload[3], last_fire_payload[4], last_fire_payload[5],
+                             last_fire_payload[6]);
+            end
+        end
+
+        // Two PAIRs sharing control 3 queue at different times: each fire
+        // carries its own partner, not the later instruction's.
+        reset_case;
+        put_beat(3'd0, ELEM_QPAIR, 8'd3, 8'd4, 7'h66, 5'd10);
+        put_beat(3'd1, ELEM_QPAIR, 8'd3, 8'd5, 7'h66, 5'd26);
+        idle_bus;
+        wait_cycles(20); // past the first (block_imm=10) fire, before the second (block_imm=26)
+        checks = checks + 1;
+        if ((fire_per_q[3] != 1) || (last_fire_payload[3] !== 32'd4) || (last_fire_payload[4] !== 32'd3)) begin
+            failures = failures + 1;
+            $display("[FAIL] first queued PAIR fires with its own partner: fires=%0d q3=%08x q4=%08x",
+                     fire_per_q[3], last_fire_payload[3], last_fire_payload[4]);
+        end else
+            $display("[PASS] first queued PAIR fires with its own partner: q3=%0d q4=%0d",
+                     last_fire_payload[3], last_fire_payload[4]);
+        wait_cycles(20);
+        checks = checks + 1;
+        if ((fire_per_q[3] != 2) || (last_fire_payload[3] !== 32'd5) || (last_fire_payload[5] !== 32'd3)) begin
+            failures = failures + 1;
+            $display("[FAIL] second queued PAIR fires with its own partner: fires=%0d q3=%08x q5=%08x",
+                     fire_per_q[3], last_fire_payload[3], last_fire_payload[5]);
+        end else
+            $display("[PASS] second queued PAIR fires with its own partner: q3=%0d q5=%0d",
+                     last_fire_payload[3], last_fire_payload[5]);
+
         // Two rotations queued for the same qubit at different times must
         // each fire with their own angle, in order -- not overwritten or
         // swapped by the second instruction's payload_q write landing before
