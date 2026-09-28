@@ -12,8 +12,7 @@ module vproc_top import vproc_pkg::*; #(
         parameter int unsigned     ICACHE_SZ     = 0,   // instruction cache size in bytes
         parameter int unsigned     ICACHE_LINE_W = 128, // instruction cache line width in bits
         parameter int unsigned     DCACHE_SZ     = 0,   // data cache size in bytes
-        parameter int unsigned     DCACHE_LINE_W = 512, // data cache line width in bits
-        parameter int unsigned     QUANTUM_READY_HOLDOFF_CYCLES = 2 // quantum qvproc
+        parameter int unsigned     DCACHE_LINE_W = 512  // data cache line width in bits
     )(
         input  logic               clk_i,
         input  logic               rst_ni,
@@ -116,18 +115,6 @@ module vproc_top import vproc_pkg::*; #(
     cfg_lmul     quantum_lmul; // quantum qvproc
     // cfg_emul     quantum_emul; // quantum qvproc
     // cfg_lmul     quantum_lmul_legacy; // quantum qvproc
-    // Replaced by the exported EMUL sideband and the local per-stream LMUL sideband so ready can
-    // follow the user-visible program configuration without adding another top-level debug port. // quantum qvproc
-    logic [31:0] quantum_holdoff_count_q; // quantum qvproc
-    logic [31:0] quantum_holdoff_count_d; // quantum qvproc
-    logic        quantum_prev_valid_q; // quantum qvproc
-    logic        quantum_prev_valid_d; // quantum qvproc
-    logic        quantum_prev_first_cycle_q; // quantum qvproc
-    logic        quantum_prev_first_cycle_d; // quantum qvproc
-    logic [2:0]  quantum_prev_instr_id_q; // quantum qvproc
-    logic [2:0]  quantum_prev_instr_id_d; // quantum qvproc
-    logic        quantum_new_stream; // quantum qvproc
-    logic        quantum_data_ready_d; // quantum qvproc
     logic        qsg_measure_issue;
     logic        qsg_measure_instr_match;
     logic        measure_active_q, measure_active_d;
@@ -884,56 +871,8 @@ module vproc_top import vproc_pkg::*; #(
     assign qvsg_meas_o          = measure_active_q | qsg_measure_issue;
     assign measure_issued_done_o = (measure_issued_done_cnt_q != 2'd0);
 
-    assign quantum_new_stream = quantum_valid_o & quantum_first_cycle_o & ( // quantum qvproc
-        ~quantum_prev_valid_q | ~quantum_prev_first_cycle_q | (quantum_instr_id_o != quantum_prev_instr_id_q) // quantum qvproc
-    ); // quantum qvproc
-
-    // Two-beat warm-up holdoff for large-LMUL streams. ROT.V no longer needs
-    // its own holdoff: the pipeline only delivers ROT.V beats once index and
-    // angle are properly paired (qrotv_angle_freeze in vproc_vregunpack.sv),
-    // so the old per-LMUL 4/6-cycle guess is gone.
-    always_comb begin // quantum qvproc
-        logic [31:0] first_cycle_seen_next; // quantum qvproc
-        logic        quantum_holdoff_stream; // quantum qvproc
-        quantum_holdoff_count_d    = quantum_holdoff_count_q; // quantum qvproc
-        quantum_prev_valid_d       = quantum_valid_o; // quantum qvproc
-        quantum_prev_first_cycle_d = quantum_first_cycle_o; // quantum qvproc
-        quantum_prev_instr_id_d    = quantum_instr_id_o; // quantum qvproc
-        quantum_data_ready_d       = 1'b0; // quantum qvproc
-        first_cycle_seen_next      = quantum_holdoff_count_q; // quantum qvproc
-        quantum_holdoff_stream     = (quantum_lmul == LMUL_4) || (quantum_lmul == LMUL_8); // quantum qvproc
-
-        if (~quantum_valid_o) begin // quantum qvproc
-            quantum_holdoff_count_d = '0; // quantum qvproc
-            quantum_data_ready_d    = 1'b0; // quantum qvproc
-        end else if (quantum_holdoff_stream) begin // quantum qvproc
-            if (quantum_first_cycle_o) begin // quantum qvproc
-                first_cycle_seen_next   = quantum_new_stream ? 32'd1 : (quantum_holdoff_count_q + 32'd1); // quantum qvproc
-                quantum_holdoff_count_d = first_cycle_seen_next; // quantum qvproc
-                quantum_data_ready_d    = (first_cycle_seen_next > QUANTUM_READY_HOLDOFF_CYCLES); // quantum qvproc
-            end else begin // quantum qvproc
-                quantum_data_ready_d    = 1'b1; // quantum qvproc
-            end // quantum qvproc
-        end else begin // quantum qvproc
-            quantum_holdoff_count_d = '0; // quantum qvproc
-            quantum_data_ready_d    = 1'b1; // quantum qvproc
-        end // quantum qvproc
-    end // quantum qvproc
-
-    assign quantum_data_ready_o = quantum_data_ready_d; // quantum qvproc
-
-    always_ff @(posedge clk_i or negedge rst_ni) begin // quantum qvproc
-        if (~rst_ni) begin // quantum qvproc
-            quantum_holdoff_count_q    <= '0; // quantum qvproc
-            quantum_prev_valid_q       <= 1'b0; // quantum qvproc
-            quantum_prev_first_cycle_q <= 1'b0; // quantum qvproc
-            quantum_prev_instr_id_q    <= '0; // quantum qvproc
-        end else begin // quantum qvproc
-            quantum_holdoff_count_q    <= quantum_holdoff_count_d; // quantum qvproc
-            quantum_prev_valid_q       <= quantum_prev_valid_d; // quantum qvproc
-            quantum_prev_first_cycle_q <= quantum_prev_first_cycle_d; // quantum qvproc
-            quantum_prev_instr_id_q    <= quantum_prev_instr_id_d; // quantum qvproc
-        end // quantum qvproc
-    end // quantum qvproc
+    // Every exported beat is a real element: vproc_elem emits a stalled
+    // result once, when it leaves the stage, so no warm-up holdoff is needed.
+    assign quantum_data_ready_o = quantum_valid_o; // quantum qvproc
 
 endmodule

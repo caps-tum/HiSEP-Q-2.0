@@ -234,6 +234,34 @@ MQTBench assembly deliberately lowers unsupported rotations to H, for example
 `qv.h ... # FALLBACK (rz)` in the QFT programs. These runs validate the emitted
 substitute program, not the original QASM semantics.
 
+### LMUL 4/8 stream stalls
+
+At LMUL 4/8 the ELEM result stage often stalls on a stream's first element
+(downstream not ready). The stalled result stays valid, and each stall cycle
+used to be exported as another quantum beat. `vproc_top.sv` hid this with a
+fixed two-beat ready holdoff, which is only right when the stall is exactly
+two cycles. With no stall, element 0 was dropped: a 16-qubit m4 MEASURE fired
+15 qubits, and the measurement still completed and returned a 16-bit result.
+With a longer stall, a duplicate reached the dispatcher. The MEASURE drain
+counter also counted the held-off beats, so `measure_issued_done` could rise
+before the last beat. `vproc_elem.sv` now exports a result only on the cycle it
+leaves the stage (`& pipe_out_ready_i`), and the holdoff is gone:
+`quantum_data_ready_o` follows `quantum_valid_o`.
+
+- `qv_single_measure_m4.mem` (+ `.expect`): m4, VL=16, H then MEASURE on
+  qubits 0-15 from v4. The H stream stalls two cycles and the MEASURE stream
+  none. It expects exactly 16 H and 16 MEASURE fires. HEAD RTL fails with
+  `expected=32 fires=31` (q0's MEASURE missing).
+- `qv_single_measure_m8.mem` (+ `.expect`): the same program at m8 from v8;
+  same expectation, same HEAD failure.
+- Not covered by a directed case: a stall longer than two cycles, or a stall
+  on a later element. The d=3/5/7 FTQC loops (exact AWG scoreboards) cover
+  them only indirectly.
+- Testbench contract: a MEASURE beat accepted after `measure_issued_done`,
+  before the result handshake, fails the run.
+- The FTQC d=7 surface-code loop (m4 CNOT layers, 32-qubit MEASUREs) is where
+  this surfaced.
+
 ## Required pass/fail contract
 
 A positive test should check all relevant items:

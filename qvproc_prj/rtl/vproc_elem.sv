@@ -201,7 +201,10 @@ module vproc_elem #(
                                 (op == ELEM_QROTV  ); 
         end
     endfunction
-    assign quantum_valid_o       = quantum_slice_valid_q & is_quantum_opcode(state_res_q.mode.elem.op); // quantum qvproc
+    // A result held by a downstream stall stays valid for several cycles;
+    // export it once, on the cycle it leaves the stage.
+    assign quantum_valid_o       = quantum_slice_valid_q & pipe_out_ready_i &
+                                   is_quantum_opcode(state_res_q.mode.elem.op); // quantum qvproc
     assign quantum_op_o          = state_res_q.mode.elem.op; // quantum qvproc
     assign quantum_instr_id_o    = state_res_q.id; // quantum qvproc
     assign quantum_vd_addr_o     = state_res_q.res_vaddr; // quantum qvproc

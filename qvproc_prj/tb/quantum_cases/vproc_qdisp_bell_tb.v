@@ -398,6 +398,16 @@ module vproc_qdisp_bell_tb;
     // -----------------------------------------------------------------
     // Quantum stream monitor
     // -----------------------------------------------------------------
+    // Set once the core reports the MEASURE stream issued, cleared by the
+    // result handshake (measure_done is a one-cycle pulse with no ready): no
+    // MEASURE beat may be accepted in between, nor in the cycle
+    // measure_issued_done rises -- the stream is complete before it.
+    reg meas_stream_closed;
+    always @(posedge clk) begin
+        if (rst || measure_done)     meas_stream_closed <= 1'b0;
+        else if (measure_issued_done) meas_stream_closed <= 1'b1;
+    end
+
     always @(posedge clk) begin
         if (!rst && quantum_valid) begin
             if (quantum_event_idx >= EVENT_LOG_LIMIT) begin
@@ -417,6 +427,14 @@ module vproc_qdisp_bell_tb;
                      cycle_count, quantum_event_idx, bell_op_name(quantum_op),
                      quantum_instr_id, quantum_elem1, quantum_elem2,
                      quantum_elem3, quantum_data_ready, t_cnt);
+
+            if (quantum_data_ready && (quantum_op == ELEM_QSINGLE) &&
+                (quantum_elem3[31:25] == 7'h68) &&          // MEASURE GateID
+                (measure_issued_done || meas_stream_closed)) begin
+                $display("[QDISP_TB][cycle=%0d][FAIL] MEASURE beat accepted after measure_issued_done",
+                         cycle_count);
+                finish_simulation(1);
+            end
 
             // Detect resume-marker stream (same logic as original Bell TB)
             if (!resume_stream_seen &&
