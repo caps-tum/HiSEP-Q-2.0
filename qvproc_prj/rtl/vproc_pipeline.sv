@@ -247,10 +247,76 @@ module vproc_pipeline import vproc_pkg::*; #(
         end
     end
 
-    // Next-state logic
+    // Next-state logic. state_cont is the next state of the current instruction if no new
+    // instruction is accepted; it does not depend on the handshake (pipe_in_ready_o), so
+    // logic that feeds the handshake back can use it without a combinational loop
+    // (SYNTH-001). state_next selects between it and the incoming instruction.
+    state_t state_cont;
     always_comb begin
-        state_next = state_q;
+        state_cont = state_q;
+        state_cont.first_cycle = '0;
+        state_cont.init_addr = '0;
+        state_cont.count     = count_next_inc;
+        state_cont.alt_count = alt_count_next_inc;
+        if (aux_count_used) begin
+            state_cont.aux_count = state_q.aux_count + AUX_COUNTER_W'(1);
+        end
+        if (FIELD_COUNT_USED & state_q.last_cycle & state_q.alt_last_cycle) begin
+            state_cont.init_addr   = 1'b1;
+            state_cont.count       = '0;
+            state_cont.alt_count   = '0;
+            state_cont.field_count = state_q.field_count - 3'b001;
+            state_cont.xval        = DONT_CARE_ZERO ? '0 : 'x;
+            unique case (state_q.eew)
+                VSEW_8:  state_cont.xval = state_q.xval + 32'h1;
+                VSEW_16: state_cont.xval = state_q.xval + 32'h2;
+                VSEW_32: state_cont.xval = state_q.xval + 32'h4;
+                default: ;
+            endcase
+            state_cont.op_vaddr[FIELD_OP] = DONT_CARE_ZERO ? '0 : 'x;
+            unique case (state_q.emul)
+                EMUL_1: state_cont.op_vaddr[FIELD_OP] = state_q.op_vaddr[FIELD_OP] + 5'(1);
+                EMUL_2: state_cont.op_vaddr[FIELD_OP] = state_q.op_vaddr[FIELD_OP] + 5'(2);
+                EMUL_4: state_cont.op_vaddr[FIELD_OP] = state_q.op_vaddr[FIELD_OP] + 5'(4);
+                // EMUL_8 is invalid since EMUL * NFIELDS <= 8 according to spec
+                default: ;
+            endcase
+            state_cont.res_vaddr = DONT_CARE_ZERO ? '0 : 'x;
+            unique case (state_q.emul)
+                EMUL_1: state_cont.res_vaddr = state_q.res_vaddr + 5'(1);
+                EMUL_2: state_cont.res_vaddr = state_q.res_vaddr + 5'(2);
+                EMUL_4: state_cont.res_vaddr = state_q.res_vaddr + 5'(4);
+                // EMUL_8 is invalid since EMUL * NFIELDS <= 8 according to spec
+                default: ;
+            endcase
+        end
+        for (int i = 0; i < OP_CNT; i++) begin
+            if ((OP_DYN_ADDR != '0) & ~OP_DYN_ADDR[i]) begin
+                state_cont.op_flags[i].hold = state_q.aux_count != '1;
+            end
+        end
+        if ((state_q.unit == UNIT_ELEM) && (state_q.mode.elem.op == ELEM_QROTV) &&
+            state_q.op_load[1]) begin
+            state_cont.qrotv_op2_chunk = state_q.qrotv_op2_chunk + 3'd1; // quantum qvproc
+        end
+        if (state_q.qrotv_startup) begin // quantum qvproc
+            state_cont.first_cycle         = 1'b1;
+            state_cont.init_addr           = 1'b1;
+            state_cont.count               = state_q.count;
+            state_cont.alt_count           = state_q.alt_count;
+            state_cont.aux_count           = state_q.aux_count;
+            state_cont.field_count         = state_q.field_count;
+            state_cont.qrotv_startup_phase = state_q.qrotv_startup_phase + 2'd1;
+            if (qrotv_startup_done) begin
+                state_cont.qrotv_startup       = 1'b0;
+                state_cont.qrotv_startup_phase = 2'b00;
+            end
+        end
+    end
+    always_comb begin
+        state_next = state_cont;
         if (pipe_in_ready_o) begin
+            state_next = state_q;
             state_next.count = '0;
             if (pipe_in_state_i.count_extra_phase) begin
                 state_next.count.part.sign = '1;
@@ -292,65 +358,6 @@ module vproc_pipeline import vproc_pkg::*; #(
             state_next.res_vreg                = pipe_in_state_i.res_vreg;
             state_next.res_narrow              = pipe_in_state_i.res_narrow;
             state_next.res_vaddr               = pipe_in_state_i.res_vaddr;
-        end else begin
-            state_next.first_cycle = '0;
-            state_next.init_addr = '0;
-            state_next.count     = count_next_inc;
-            state_next.alt_count = alt_count_next_inc;
-            if (aux_count_used) begin
-                state_next.aux_count = state_q.aux_count + AUX_COUNTER_W'(1);
-            end
-            if (FIELD_COUNT_USED & state_q.last_cycle & state_q.alt_last_cycle) begin
-                state_next.init_addr   = 1'b1;
-                state_next.count       = '0;
-                state_next.alt_count   = '0;
-                state_next.field_count = state_q.field_count - 3'b001;
-                state_next.xval        = DONT_CARE_ZERO ? '0 : 'x;
-                unique case (state_q.eew)
-                    VSEW_8:  state_next.xval = state_q.xval + 32'h1;
-                    VSEW_16: state_next.xval = state_q.xval + 32'h2;
-                    VSEW_32: state_next.xval = state_q.xval + 32'h4;
-                    default: ;
-                endcase
-                state_next.op_vaddr[FIELD_OP] = DONT_CARE_ZERO ? '0 : 'x;
-                unique case (state_q.emul)
-                    EMUL_1: state_next.op_vaddr[FIELD_OP] = state_q.op_vaddr[FIELD_OP] + 5'(1);
-                    EMUL_2: state_next.op_vaddr[FIELD_OP] = state_q.op_vaddr[FIELD_OP] + 5'(2);
-                    EMUL_4: state_next.op_vaddr[FIELD_OP] = state_q.op_vaddr[FIELD_OP] + 5'(4);
-                    // EMUL_8 is invalid since EMUL * NFIELDS <= 8 according to spec
-                    default: ;
-                endcase
-                state_next.res_vaddr = DONT_CARE_ZERO ? '0 : 'x;
-                unique case (state_q.emul)
-                    EMUL_1: state_next.res_vaddr = state_q.res_vaddr + 5'(1);
-                    EMUL_2: state_next.res_vaddr = state_q.res_vaddr + 5'(2);
-                    EMUL_4: state_next.res_vaddr = state_q.res_vaddr + 5'(4);
-                    // EMUL_8 is invalid since EMUL * NFIELDS <= 8 according to spec
-                    default: ;
-                endcase
-            end
-            for (int i = 0; i < OP_CNT; i++) begin
-                if ((OP_DYN_ADDR != '0) & ~OP_DYN_ADDR[i]) begin
-                    state_next.op_flags[i].hold = state_q.aux_count != '1;
-                end
-            end
-            if ((state_q.unit == UNIT_ELEM) && (state_q.mode.elem.op == ELEM_QROTV) &&
-                state_q.op_load[1]) begin
-                state_next.qrotv_op2_chunk = state_q.qrotv_op2_chunk + 3'd1; // quantum qvproc
-            end
-            if (state_q.qrotv_startup) begin // quantum qvproc
-                state_next.first_cycle         = 1'b1;
-                state_next.init_addr           = 1'b1;
-                state_next.count               = state_q.count;
-                state_next.alt_count           = state_q.alt_count;
-                state_next.aux_count           = state_q.aux_count;
-                state_next.field_count         = state_q.field_count;
-                state_next.qrotv_startup_phase = state_q.qrotv_startup_phase + 2'd1;
-                if (qrotv_startup_done) begin
-                    state_next.qrotv_startup       = 1'b0;
-                    state_next.qrotv_startup_phase = 2'b00;
-                end
-            end
         end
     end
 
@@ -529,6 +536,35 @@ module vproc_pipeline import vproc_pkg::*; #(
         end
     end
 
+    // op_load_next[1] of a QV.ROT.V instruction that continues, computed from state_cont
+    // instead of state_next: the operand address below uses it to point at the next angle
+    // chunk one cycle ahead, and through the stall logic that address feeds the handshake,
+    // so it must not depend on pipe_in_ready_o (SYNTH-001). It equals op_load_next[1]
+    // whenever no new instruction is accepted (checked in simulation below). // quantum qvproc
+    logic qrv_op2_load_cont;
+    generate
+        if (OP_CNT > 1) begin : gen_qrv_op2_load_cont
+            always_comb begin
+                qrv_op2_load_cont = 1'b0;
+                if (OP_DYN_ADDR[1]) begin
+                    if (state_cont.aux_count == '0) begin
+                        qrv_op2_load_cont = OP_ALWAYS_VREG[1] | state_cont.op_flags[1].vreg;
+                    end
+                end else if ((~aux_count_used | (state_cont.aux_count == '0)) & ~OP_MASK[1] &
+                             (state_cont.unit == UNIT_ELEM) & (state_cont.mode.elem.op == ELEM_QROTV)) begin
+                    if ((state_q.qrotv_startup ? qrotv_startup_phase_next : state_cont.count.val[1:0]) == 2'b00) begin
+                        qrv_op2_load_cont = OP_ALWAYS_VREG[1] | state_cont.op_flags[1].vreg;
+                    end
+                end
+                if (wait_alt_count_next) begin
+                    qrv_op2_load_cont = 1'b0;
+                end
+            end
+        end else begin : gen_no_qrv_op2
+            assign qrv_op2_load_cont = 1'b0;
+        end
+    endgenerate
+
     // Result store and shift signals
     logic res_store;
     logic res_shift;
@@ -566,13 +602,14 @@ module vproc_pipeline import vproc_pkg::*; #(
             op_load [i]       = state_q.op_load [i];
             op_flags[i].shift = state_q.op_flags[i].shift;
             if (((state_q.op_load[i] |
-                  (((state_q.unit == UNIT_ELEM) && (state_q.mode.elem.op == ELEM_QROTV) && (i == 1)) ? op_load_next[i] : 1'b0)
+                  (((state_q.unit == UNIT_ELEM) && (state_q.mode.elem.op == ELEM_QROTV) && (i == 1)) ? qrv_op2_load_cont : 1'b0)
                  ) & ~OP_DYN_ADDR[i])) begin
                 if ((state_q.unit == UNIT_ELEM) && (state_q.mode.elem.op == ELEM_QROTV) && (i == 1)) begin // quantum qvproc
                     // QRV op2 uses a dedicated chunk tracker because the shared e8 counter does
                     // not line up with the 32-bit angle reload cadence. state_q.qrotv_op2_chunk
-                    // stores the currently buffered chunk; when op_load_next requests a fresh
-                    // buffer this same cycle, the address must already point at the next chunk. // quantum qvproc
+                    // stores the currently buffered chunk; when the next cycle loads a fresh
+                    // buffer (qrv_op2_load_cont), the address must already point at the next
+                    // chunk. // quantum qvproc
                     op_vaddr[i] = state_q.op_vaddr[i] +
                                   {{(MAX_VADDR_W-3){1'b0}}, state_q.qrotv_op2_chunk}; // quantum qvproc
                 end else if (OP_NARROW[i] & state_q.op_flags[i].narrow) begin
@@ -1172,6 +1209,26 @@ module vproc_pipeline import vproc_pkg::*; #(
 
 `ifdef VPROC_SVA
 `include "vproc_pipeline_sva.svh"
+`endif
+
+`ifndef SYNTHESIS
+    // SYNTH-001: qrv_op2_load_cont must equal op_load_next[1] whenever no new instruction
+    // is accepted; cycles where the old rule (op_load_next[1]) would have given a different
+    // operand address are reported for review.
+    generate
+        if (OP_CNT > 1) begin : gen_qrv_checks
+            always_ff @(posedge clk_i) begin
+                if (async_rst_ni & sync_rst_ni & (state_q.unit == UNIT_ELEM) &
+                    (state_q.mode.elem.op == ELEM_QROTV)) begin
+                    if (~pipe_in_ready_o & (qrv_op2_load_cont != op_load_next[1]))
+                        $error("vproc_pipeline: qrv_op2_load_cont differs from op_load_next[1]");
+                    if (~state_q.op_load[1] & (qrv_op2_load_cont != op_load_next[1]))
+                        $display("[SYNTH001] %0t operand-2 address rule differs (valid %0d, ready_in %0d)",
+                                 $time, state_valid_q, pipe_in_ready_o);
+                end
+            end
+        end
+    endgenerate
 `endif
 
 endmodule
