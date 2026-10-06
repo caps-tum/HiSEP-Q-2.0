@@ -168,7 +168,6 @@ module vproc_elem #(
 
     assign pipe_out_valid_o     = state_res_valid_q;
     assign pipe_out_ctrl_o      = state_res_q;
-    assign pipe_out_res_valid_o = result_valid_q;
     assign pipe_out_res_o       = result_q;
     assign pipe_out_mask_o      = {4{result_mask_q}};
 
@@ -201,6 +200,12 @@ module vproc_elem #(
                                 (op == ELEM_QROTV  ); 
         end
     endfunction
+    // Quantum ops have no vector destination: custom-0 bits [11:7] are block_imm, and the
+    // decoder marks rd as not a vreg, so the hazard logic does not track a write. Their
+    // internal result (kept for the export below) must therefore never reach the VRF:
+    // with it, every quantum op wrote v<block_imm> (v0 for block_imm 0) unprotected (QW-001).
+    assign pipe_out_res_valid_o = result_valid_q & ~is_quantum_opcode(state_res_q.mode.elem.op);
+
     // A result held by a downstream stall stays valid for several cycles;
     // export it once, on the cycle it leaves the stage.
     assign quantum_valid_o       = quantum_slice_valid_q & pipe_out_ready_i &

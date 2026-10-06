@@ -262,6 +262,25 @@ leaves the stage (`& pipe_out_ready_i`), and the holdoff is gone:
 - The FTQC d=7 surface-code loop (m4 CNOT layers, 32-qubit MEASUREs) is where
   this surfaced.
 
+### Quantum instructions and the vector register file (QW-001)
+
+Custom-0 bits [11:7] are block_imm, not vd. Quantum instructions must not write the VRF and
+must not clear pending writes of other instructions (fixed 2026-10-06 in `vproc_elem.sv` and
+`vproc_unit_wrapper.sv`).
+
+- `qv_block_imm_vrf.mem` (+ `.expect`, source `.S`, 16 qubits, e8 m4 VL 8):
+  - an H with block_imm 8 must leave v8 intact;
+  - a Z with block_imm 0 must leave v0 intact;
+  - each register is then used as an index vector.
+
+  Unfixed RTL: `expected=48 fires=32`, 16 invalid-index pulses.
+- `qv_block_imm_pend_q32.mem` (+ `.expect`, `.S`, 32 qubits, e8 m2):
+  - a RESET with block_imm 3 completes while a vle to v2..v3 is in flight;
+  - the next RESET on v2 must see the loaded indices.
+
+  With only the write-back fix it fires on stale indices. Case names ending in `_q32` run with
+  32 qubits on both runners.
+
 ## Required pass/fail contract
 
 A positive test should check all relevant items:

@@ -581,7 +581,17 @@ module vproc_unit_wrapper import vproc_pkg::*; #(
                 pipe_out_res_mask_o [0][3:0]     = flushing_q ? '0 : unit_out_mask;
             end
             assign pipe_out_instr_done_o     = (~flushing_q & unit_out_ctrl.last_cycle & ~unit_out_ctrl.requires_flush                                ) | flushing_last_cycle;
-            assign pipe_out_pend_clear_o     = (~flushing_q & unit_out_ctrl.last_cycle & ~unit_out_ctrl.requires_flush & ~unit_out_ctrl.mode.elem.xreg) | flushing_last_cycle;
+            // Quantum ops set no pending write (no vector result; bits [11:7] are block_imm), so
+            // they must clear none: a bulk clear at their res_vaddr removed the pending flags of
+            // an unrelated in-flight write, e.g. a vle to v2..v3 at EMUL_2 when block_imm = 3 (QW-001).
+            logic unit_out_quantum;
+            assign unit_out_quantum = (unit_out_ctrl.mode.elem.op == ELEM_QSINGLE) | (unit_out_ctrl.mode.elem.op == ELEM_QPAIR) |
+                                      (unit_out_ctrl.mode.elem.op == ELEM_QROTG  ) | (unit_out_ctrl.mode.elem.op == ELEM_QROTV);
+            // Only the non-flush term is masked: quantum ops never require a flush (elem_flush = 0),
+            // and a flush clear belongs to a saved non-quantum instruction while unit_out_ctrl
+            // may already show the next one.
+            assign pipe_out_pend_clear_o     = (~flushing_q & unit_out_ctrl.last_cycle & ~unit_out_ctrl.requires_flush & ~unit_out_ctrl.mode.elem.xreg & ~unit_out_quantum)
+                                               | flushing_last_cycle;
             assign pipe_out_pend_clear_cnt_o = unit_out_ctrl.emul; // TODO reductions always have destination EMUL == 1
             assign quantum_first_valid_result_o = first_valid_result; // quantum qvproc
             assign quantum_has_valid_result_o   = has_valid_result_q; // quantum qvproc

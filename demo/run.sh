@@ -65,6 +65,7 @@ done
 case "${CASE_NAME}" in
     mqtbench_graphstate_32*) : "${QUBITS:=32}" ;;
     qv_rot_idx255*)          : "${QUBITS:=256}" ;;
+    *_q32)                   : "${QUBITS:=32}" ;;
 esac
 QUBITS="${QUBITS:-16}"
 [[ "$QUBITS" =~ ^[1-9][0-9]*$ ]] || { echo "Error: --qubits must be a positive integer" >&2; exit 1; }
